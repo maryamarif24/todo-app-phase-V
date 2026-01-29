@@ -107,12 +107,6 @@ export default function TodosPage() {
     <div>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-bold" style={{ color: 'rgb(127, 23, 52)' }}>Your Todos</h2>
-        <Link
-          href="/chat"
-          className="px-4 py-2 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition"
-        >
-          Chat with AI
-        </Link>
       </div>
 
       {error && (

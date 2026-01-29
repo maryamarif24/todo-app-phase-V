@@ -182,6 +182,69 @@ async def chat(
         )
 
 
+# New endpoint for todo operations without storing conversation history
+class TodoOperationRequest(BaseModel):
+    message: str
+
+
+@router.post("/todo-operation", summary="Perform a todo operation without storing conversation history")
+async def todo_operation(
+    request: TodoOperationRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Process a user's natural language message for todo operations without storing conversation history.
+    This endpoint requires authentication and is intended for the floating chat widget.
+    """
+    try:
+        # Create an instance of the TodoAgent
+        agent = TodoAgent()
+
+        # Process the message with the agent - no conversation history stored
+        ai_response = agent.process_message(
+            user_id=current_user.id,
+            message=request.message,
+            # Don't pass conversation_id to avoid storing in DB
+        )
+
+        # Return the AI's response without conversation info
+        return {
+            "response": ai_response,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+    except HTTPException:
+        # Re-raise HTTP exceptions (like auth errors)
+        raise
+    except Exception as e:
+        # Log the detailed error for debugging
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"Detailed error processing todo operation: {error_details}")
+
+        # Determine the specific type of error to provide better feedback
+        error_msg = str(e)
+        status_code = 500
+
+        if "OPENROUTER_API_KEY" in error_msg or "environment variable" in error_msg:
+            status_code = 500
+            error_msg = "Configuration error: AI service is not properly configured. Please contact the administrator."
+        elif "database" in error_msg.lower() or "connection" in error_msg.lower():
+            status_code = 500
+            error_msg = "Database connection error. Please try again later."
+        elif "authentication" in error_msg.lower() or "401" in error_msg:
+            status_code = 401
+            error_msg = "Authentication failed. Please sign in again."
+        else:
+            status_code = 500
+            error_msg = "An error occurred while processing your request. Please try again."
+
+        raise HTTPException(
+            status_code=status_code,
+            detail=error_msg
+        )
+
+
 # Additional endpoint to get conversation history (useful for frontend)
 @router.get("/conversations", summary="Get user's conversation history")
 async def get_conversations(

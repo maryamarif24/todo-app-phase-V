@@ -7,10 +7,21 @@ and engage in conversation using OpenRouter API.
 import os
 import json
 import httpx
+import uuid
 from typing import Dict, Any, Optional
 from openai import OpenAI
 
 from ..services.conversation_service import ConversationService
+from ..services.todo_service import (
+    get_todos_by_user,
+    get_todo_by_id,
+    create_todo,
+    update_todo,
+    delete_todo,
+    toggle_todo_complete,
+    get_todo_by_title
+)
+from ..models.database import get_db
 from sqlmodel import Session
 
 
@@ -132,24 +143,33 @@ class TodoAgent:
 
         # Handle todo-specific commands first
         if self._is_todo_command(message_lower):
-            return self._handle_todo_command(user_id_str, message_lower)
+            return self._handle_todo_command(user_id_str, message)
 
-        # Handle general conversation
-        if self._is_general_conversation(message_lower):
-            if not self.offline_mode:
-                return self._process_with_ai(user_id_str, message)
-            else:
-                return self._handle_general_conversation(message)
-
-        # If not in offline mode, use AI for more complex queries
+        # For general conversation, use AI if available
         if not self.offline_mode:
             return self._process_with_ai(user_id_str, message)
 
-        # Default response for offline mode
-        return "I can help you manage your todos! Try saying things like:\n- 'Create a todo to buy groceries'\n- 'Show me my todos'\n- 'Mark todo abc-123 as complete'\n- 'Delete todo abc-123'"
+        # Fallback to offline conversation handling
+        return self._handle_general_conversation(message)
 
     def _extract_todo_title(self, message: str) -> Optional[str]:
         """Extract todo title from a create message."""
+        # First, try to extract from quoted strings (handles "add todo -- add todo\n  \"hi\" with description \"hello\"\n  08:05 am")
+        import re
+
+        # Look for quoted strings - handles cases like "add todo -- add todo\n  \"hi\" with description \"hello\"\n  08:05 am"
+        quote_pattern = r'"([^"]*)"|\'([^\']*)\''
+        matches = re.findall(quote_pattern, message)
+
+        if matches:
+            # If there are multiple quoted strings, use the first one (usually the title)
+            for match in matches:
+                # match is a tuple where one element is the matched string in double quotes,
+                # and the other is the matched string in single quotes (or empty string)
+                title = match[0] if match[0] else match[1]
+                if title:
+                    return title.strip()
+
         # Simple extraction - look for common patterns
         message_lower = message.lower()
 
@@ -184,20 +204,182 @@ class TodoAgent:
                 return True
         return False
 
-    def _handle_todo_command(self, user_id_str: str, message_lower: str) -> str:
+    def _handle_todo_command(self, user_id_str: str, message: str) -> str:
         """Handle todo-specific commands."""
-        # This would typically integrate with the todo service
-        # For now, return a helpful message
-        if any(word in message_lower for word in ['create', 'add', 'new', 'make']) and any(word in message_lower for word in ['todo', 'task']):
-            return "I can help you create a todo! In a full implementation, I would create a todo based on your request."
-        elif any(word in message_lower for word in ['show', 'list', 'view', 'get']) and any(word in message_lower for word in ['todo', 'task', 'todos', 'tasks']):
-            return "I can help you view your todos! In a full implementation, I would show your todo list."
+        message_lower = message.lower()
+
+        # Check for delete command first (more specific)
+        if any(word in message_lower for word in ['delete', 'remove']) and any(word in message_lower for word in ['todo', 'task']):
+            return self._delete_todo_from_message(user_id_str, message)
+
+        # Create a new todo (prioritize creation over completion when both keywords are present)
+        elif any(word in message_lower for word in ['create', 'add', 'new', 'make']) and any(word in message_lower for word in ['todo', 'task']):
+            return self._create_todo_from_message(user_id_str, message)
+
+        # Check for completion commands (only if not a creation command)
         elif any(word in message_lower for word in ['complete', 'finish', 'done', 'mark']) and any(word in message_lower for word in ['todo', 'task']):
-            return "I can help you mark a todo as complete! In a full implementation, I would update the todo status."
-        elif any(word in message_lower for word in ['delete', 'remove']) and any(word in message_lower for word in ['todo', 'task']):
-            return "I can help you delete a todo! In a full implementation, I would remove the todo."
+            return self._toggle_todo_completion(user_id_str, message)
+
+        # Check for show/list commands
+        elif any(word in message_lower for word in ['show', 'list', 'view', 'get']) and any(word in message_lower for word in ['todo', 'task', 'todos', 'tasks']):
+            return self._get_user_todos(user_id_str)
+
         else:
             return "I can help you manage your todos! Try saying things like 'Create a todo to buy groceries' or 'Show me my todos'."
+
+    def _create_todo_from_message(self, user_id_str: str, message: str) -> str:
+        """Create a new todo from a natural language message."""
+        try:
+            user_id = uuid.UUID(user_id_str)
+
+            # Extract the title from the message
+            title = self._extract_todo_title(message)
+            if not title:
+                return "I couldn't extract a title from your message. Please try again with a clear todo description."
+
+            # Create a new database session
+            db_gen = get_db()
+            db = next(db_gen)
+
+            try:
+                # Create the todo
+                new_todo = create_todo(db, user_id, title.strip())
+                db.add(new_todo)
+                db.commit()
+                db.refresh(new_todo)
+
+                return f"[SUCCESS] Successfully created todo: '{new_todo.title}'. Your todo has been added to your list!"
+            except Exception as e:
+                db.rollback()
+                return f"I encountered an error creating your todo: {str(e)}"
+            finally:
+                db.close()
+        except ValueError:
+            return "Invalid user ID format. Please try again."
+        except Exception as e:
+            return f"An error occurred while creating your todo: {str(e)}"
+
+    def _get_user_todos(self, user_id_str: str) -> str:
+        """Get all todos for the user."""
+        try:
+            user_id = uuid.UUID(user_id_str)
+
+            # Create a new database session
+            db_gen = get_db()
+            db = next(db_gen)
+
+            try:
+                # Get all todos for the user
+                todos = get_todos_by_user(db, user_id)
+
+                if not todos:
+                    return "You don't have any todos yet. Try creating one with 'Create a todo to [your task]'!"
+
+                # Format the todos for display
+                todo_list = []
+                for i, todo in enumerate(todos, 1):
+                    status = "[DONE]" if todo.is_complete else "[PENDING]"
+                    todo_list.append(f"{i}. {status} {todo.title}")
+
+                return f"Here are your todos:\n" + "\n".join(todo_list)
+            finally:
+                db.close()
+        except ValueError:
+            return "Invalid user ID format. Please try again."
+        except Exception as e:
+            return f"An error occurred while retrieving your todos: {str(e)}"
+
+    def _toggle_todo_completion(self, user_id_str: str, message: str) -> str:
+        """Toggle the completion status of a todo."""
+        try:
+            user_id = uuid.UUID(user_id_str)
+
+            # Create a new database session
+            db_gen = get_db()
+            db = next(db_gen)
+
+            try:
+                # Try to find the todo by ID first
+                todo_id = self._extract_todo_id(message)
+                todo = None
+
+                if todo_id:
+                    try:
+                        todo_uuid = uuid.UUID(todo_id)
+                        todo = get_todo_by_id(db, todo_uuid)
+                    except ValueError:
+                        # Invalid UUID format
+                        pass
+
+                # If no ID found, try to find by title
+                if not todo:
+                    # Extract title from message
+                    title = self._extract_todo_title(message)
+                    if title:
+                        todo = get_todo_by_title(db, user_id, title)
+
+                if not todo:
+                    return "I couldn't find that todo. Please check the title or ID and try again."
+
+                # Toggle completion status
+                updated_todo = toggle_todo_complete(db, todo.id)
+                db.commit()
+                db.refresh(updated_todo)
+
+                status = "completed" if updated_todo.is_complete else "marked as incomplete"
+                return f"[SUCCESS] Todo '{updated_todo.title}' has been {status}."
+            finally:
+                db.close()
+        except ValueError:
+            return "Invalid user ID or todo ID format. Please try again."
+        except Exception as e:
+            return f"An error occurred while updating your todo: {str(e)}"
+
+    def _delete_todo_from_message(self, user_id_str: str, message: str) -> str:
+        """Delete a todo based on the message."""
+        try:
+            user_id = uuid.UUID(user_id_str)
+
+            # Create a new database session
+            db_gen = get_db()
+            db = next(db_gen)
+
+            try:
+                # Try to find the todo by ID first
+                todo_id = self._extract_todo_id(message)
+                todo = None
+
+                if todo_id:
+                    try:
+                        todo_uuid = uuid.UUID(todo_id)
+                        todo = get_todo_by_id(db, todo_uuid)
+                    except ValueError:
+                        # Invalid UUID format
+                        pass
+
+                # If no ID found, try to find by title
+                if not todo:
+                    # Extract title from message
+                    title = self._extract_todo_title(message)
+                    if title:
+                        todo = get_todo_by_title(db, user_id, title)
+
+                if not todo:
+                    return "I couldn't find that todo. Please check the title or ID and try again."
+
+                # Delete the todo
+                success = delete_todo(db, todo.id)
+                if success:
+                    db.commit()
+                    return f"[SUCCESS] Todo '{todo.title}' has been deleted successfully."
+                else:
+                    return "I couldn't delete that todo. It may have already been removed."
+            finally:
+                db.close()
+        except ValueError:
+            return "Invalid user ID or todo ID format. Please try again."
+        except Exception as e:
+            return f"An error occurred while deleting your todo: {str(e)}"
 
     def _extract_todo_id(self, message: str) -> Optional[str]:
         """Extract todo ID from message."""
@@ -327,8 +509,8 @@ What would you like to do?"""
                     "role": "system",
                     "content": """You are a helpful assistant that manages todo items for users.
                     You can help users create, view, update, delete, and toggle completion status of todos.
-                    Be friendly and conversational. If the user wants to perform todo operations, guide them on how to do it.
-                    For example:
+                    Be friendly and conversational. You can also chat about general topics.
+                    For todo operations:
                     - To create: "Create a todo to buy groceries"
                     - To view: "Show me my todos"
                     - To complete: "Mark todo abc-123 as complete"
@@ -361,17 +543,18 @@ What would you like to do?"""
         """Handle requests when AI API is unavailable."""
         message_lower = message.lower().strip()
 
-        # Check for basic todo commands
+        # Check for basic todo commands and handle them directly
         if any(word in message_lower for word in ['create', 'add', 'new']) and 'todo' in message_lower:
             return "I'd love to create a todo for you, but I'm currently in offline mode. Please try again when the AI service is available."
-        elif any(word in message_lower for word in ['show', 'list', 'view', 'get']):
+        elif any(word in message_lower for word in ['show', 'list', 'view', 'get']) and any(word in message_lower for word in ['todo', 'task', 'todos', 'tasks']):
             return "I'd love to show you your todos, but I'm currently in offline mode. Please try again when the AI service is available."
-        elif any(word in message_lower for word in ['complete', 'finish', 'done', 'mark']):
+        elif any(word in message_lower for word in ['complete', 'finish', 'done', 'mark']) and any(word in message_lower for word in ['todo', 'task']):
             return "I'd love to update your todos, but I'm currently in offline mode. Please try again when the AI service is available."
-        elif any(word in message_lower for word in ['delete', 'remove']):
+        elif any(word in message_lower for word in ['delete', 'remove']) and any(word in message_lower for word in ['todo', 'task']):
             return "I'd love to delete that todo, but I'm currently in offline mode. Please try again when the AI service is available."
         else:
-            return "I'm currently in offline mode due to connectivity issues. I can still help with basic todo management when the AI service is back online. What would you like to chat about in the meantime?"
+            # Handle general conversation in offline mode
+            return self._handle_general_conversation(message)
 
     def get_conversation_context(self, conversation_id: str, user_id: str) -> Dict[str, Any]:
         """
