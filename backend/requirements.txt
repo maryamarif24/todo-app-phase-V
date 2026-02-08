@@ -1,32 +1,18 @@
-# Phase II Backend Dependencies
-# FastAPI and web server
-fastapi>=0.109.0
-uvicorn[standard]>=0.27.0
-
-# Database and ORM
-sqlmodel>=0.0.14
-asyncpg>=0.29.0
-psycopg2-binary>=2.9.9
-
-# Authentication
-bcrypt>=4.1.2
-
-# Configuration
-python-dotenv>=1.0.0
-pydantic[dotenv,email]>=2.5.0
-pydantic-settings>=2.1.0
-
-# HTTP client for API calls
-httpx>=0.26.0
-
-# Email validation (needed for pydantic email fields)
-email-validator>=2.0.0
-
-# AI/ML dependencies for chat functionality
-openai>=1.0.0
-
-# Development tools
-ruff>=0.2.0
-black>=24.1.0
-pytest>=7.4.0
-pytest-asyncio>=0.23.0
+fastapi==0.104.1
+uvicorn==0.24.0
+python-multipart==0.0.6
+python-dotenv==1.0.0
+sqlalchemy==2.0.23
+databases==0.8.0
+aiosqlite==0.19.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+bcrypt==4.0.1
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+alembic==1.13.1
+psycopg2-binary==2.9.9
+asyncpg==0.29.0
+redis==5.0.1
+rq==1.15.1
+celery==5.3.4

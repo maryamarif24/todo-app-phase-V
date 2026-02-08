@@ -1,32 +1,17 @@
-"""
-Hugging Face Spaces entry point for the Todo API.
+import os
+import sys
+from pathlib import Path
 
-This file serves as the entry point for Hugging Face Spaces deployment.
-It creates the FastAPI app instance that will be loaded by the Spaces runtime.
-"""
+# Add the backend directory to the Python path so imports work correctly
+sys.path.append(str(Path(__file__).resolve().parent))
 
-from src.main import app
-
-# This is the app instance that Hugging Face Spaces will load
-# The Spaces runtime will look for an 'app' object in this file
-# or in the main module specified in the Space configuration.
-
-# The app is already configured with:
-# - CORS middleware for cross-origin requests
-# - Authentication routes under /auth
-# - Todo routes under /todos  
-# - Chat routes under /chat
-# - Health check endpoints
-
-# When deployed to Hugging Face Spaces, the app will be served at:
-# https://<username>-<space-name>.hf.space
+from src.main import app  # Import the FastAPI app from src/main.py
 
 if __name__ == "__main__":
-    # This allows running the app locally with uvicorn for testing
     import uvicorn
     uvicorn.run(
-        "app:app",  # Points to this file's app object
-        host="0.0.0.0",
-        port=7860,  # Hugging Face Spaces default port
-        reload=True
+        app, 
+        host="0.0.0.0", 
+        port=int(os.environ.get("PORT", 7860)),
+        reload=False
     )
