@@ -16,8 +16,12 @@ export default function Home() {
   }
 
   return (
-    <div className="relative min-h-screen w-full overflow-x-hidden bg-[#fafafa]">
-      
+    <div 
+      className="relative min-h-screen w-full overflow-x-hidden bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: "url('/bg.jpg')" }}
+    >
+
+
       {/* HERO SECTION */}
       <section className="relative w-full pt-24 lg:pt-32 pb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
