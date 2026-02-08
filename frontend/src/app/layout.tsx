@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
-import { ClientAuthProvider } from '@/components/auth/client-auth-provider';
-import FloatingChatWidget from '@/components/FloatingChatWidget';
+import ClientWrapper from '@/components/ClientWrapper';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -19,10 +18,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <ClientAuthProvider>
+        <ClientWrapper>
           {children}
-          <FloatingChatWidget />
-        </ClientAuthProvider>
+        </ClientWrapper>
       </body>
     </html>
   );

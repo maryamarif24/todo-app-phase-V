@@ -105,6 +105,22 @@ export default function FloatingChatWidget() {
               : conv
           )
         );
+
+        // Check if the response contains todo operations and trigger refresh
+        const responseText = response.data.response.toLowerCase();
+        if (responseText.includes('[success]') ||
+            responseText.includes('created') ||
+            responseText.includes('added') ||
+            responseText.includes('deleted') ||
+            responseText.includes('removed') ||
+            responseText.includes('completed') ||
+            responseText.includes('marked as') ||
+            responseText.includes('updated') ||
+            responseText.includes('todo') ||
+            responseText.includes('task')) {
+          // Dispatch a custom event to notify other components to refresh
+          window.dispatchEvent(new CustomEvent('refreshTasks'));
+        }
       }
     } catch (err) {
       setError('Failed to send message. Please try again.');

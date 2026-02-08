@@ -1,28 +1,35 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import type { Todo, TodoListResponse, CreateTodoResponse } from '@/types';
-import { useAuth } from '@/components/auth/auth-provider';
+import { useAuth } from './auth/auth-provider';
 
+interface TodoSectionProps {
+  isAuthenticated: boolean;
+}
 
-export default function TodosPage() {
-  const { user, session } = useAuth();
+export default function TodoSection({ isAuthenticated }: TodoSectionProps) {
+  const { session } = useAuth();
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [newTodoTitle, setNewTodoTitle] = useState('');
   const [newTodoDescription, setNewTodoDescription] = useState('');
+  const [newTodoPriority, setNewTodoPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH'>('MEDIUM');
   const [isAdding, setIsAdding] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    fetchTodos();
-  }, []);
+    if (isAuthenticated) {
+      fetchTodos();
+    }
+  }, [isAuthenticated]);
 
   const fetchTodos = async () => {
+    if (!isAuthenticated) return;
+    
     setLoading(true);
     const response = await api.get<TodoListResponse>('/todos');
 
@@ -67,6 +74,7 @@ export default function TodosPage() {
     const request = {
       title: newTodoTitle.trim(),
       description: newTodoDescription.trim() || undefined,
+      priority: newTodoPriority,
     };
 
     const response = await api.post<CreateTodoResponse>('/todos', request);
@@ -82,6 +90,7 @@ export default function TodosPage() {
 
     setNewTodoTitle('');
     setNewTodoDescription('');
+    setNewTodoPriority('MEDIUM');
     setIsAdding(false);
     fetchTodos();
   };
@@ -95,6 +104,31 @@ export default function TodosPage() {
     ? Math.round((completedTodos.length / totalTodos) * 100)
     : 0;
 
+  if (!isAuthenticated) {
+    return (
+      <div className="bg-white rounded-lg shadow-md p-6 mt-8">
+        <h2 className="text-xl font-bold mb-4 text-center" style={{ color: "#7F1734" }}>Welcome to Worksy Todo</h2>
+        <p className="text-gray-600 text-center mb-6">
+          Sign in to start managing your tasks and todos efficiently.
+        </p>
+        <div className="flex justify-center space-x-4">
+          <a 
+            href="/signin" 
+            className="px-6 py-3 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors"
+          >
+            Sign In
+          </a>
+          <a 
+            href="/signup" 
+            className="px-6 py-3 border border-pink-500 text-pink-600 rounded-lg hover:bg-pink-50 transition-colors"
+          >
+            Sign Up
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="text-center py-8">
@@ -104,9 +138,9 @@ export default function TodosPage() {
   }
 
   return (
-    <div>
+    <div className="mt-8">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold" style={{ color: 'rgb(127, 23, 52)' }}>Your Todos</h2>
+        <h2 className="text-2xl font-bold" style={{ color: 'black' }}>Your Todos</h2>
       </div>
 
       {error && (
@@ -121,7 +155,7 @@ export default function TodosPage() {
         <div
           className="rounded-3xl p-6 relative overflow-hidden"
           style={{
-            background: 'linear-gradient(135deg, #FF6B9D 0%, #C44569 50%, #7F1734 100%)'
+            background: 'linear-gradient(135deg, #ff69b4 0%, #ff1493 50%, #000000 100%)'
           }}
         >
           {/* Subtle abstract geometric pattern */}
@@ -164,7 +198,7 @@ export default function TodosPage() {
           </div>
 
           <div className="relative z-10">
-            <h3 className="text-lg font-semibold mb-4 text-black">Add New Todo</h3>
+            <h3 className="text-lg font-semibold mb-4" style={{ color: 'black' }}>Add New Todo</h3>
             <form onSubmit={handleAddTodo} className="flex flex-col gap-4">
               <input
                 type="text"
@@ -172,7 +206,7 @@ export default function TodosPage() {
                 onChange={(e) => setNewTodoTitle(e.target.value)}
                 placeholder="What needs to be done?"
                 className="w-full px-3 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 text-black"
-                style={{ '--tw-ring-color': 'rgb(127, 23, 52)' } as React.CSSProperties}
+                style={{ borderColor: '#d1d5db', color: 'black', '--tw-ring-color': '#ff69b4' } as React.CSSProperties}
                 maxLength={200}
               />
               <textarea
@@ -180,17 +214,32 @@ export default function TodosPage() {
                 onChange={(e) => setNewTodoDescription(e.target.value)}
                 placeholder="Add more details... (optional)"
                 className="w-full px-3 py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 h-20 text-black"
-                style={{ '--tw-ring-color': 'rgb(127, 23, 52)' } as React.CSSProperties}
+                style={{ borderColor: '#d1d5db', color: 'black', '--tw-ring-color': '#ff69b4' } as React.CSSProperties}
                 maxLength={2000}
               />
-              <button
-                type="submit"
-                disabled={isAdding || !newTodoTitle.trim()}
-                className="px-6 py-2 text-white rounded-full hover:opacity-90 disabled:opacity-50 transition self-start"
-                style={{ backgroundColor: 'black' }}
-              >
-                {isAdding ? 'Adding...' : 'Add Todo'}
-              </button>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium text-black">Priority:</label>
+                  <select
+                    value={newTodoPriority}
+                    onChange={(e) => setNewTodoPriority(e.target.value as 'LOW' | 'MEDIUM' | 'HIGH')}
+                    className="px-3 py-1 border border-gray-300 rounded-full text-sm focus:outline-none focus:ring-2 text-black"
+                    style={{ borderColor: '#d1d5db', color: 'black', '--tw-ring-color': '#ff69b4' } as React.CSSProperties}
+                  >
+                    <option value="LOW">Low</option>
+                    <option value="MEDIUM">Medium</option>
+                    <option value="HIGH">High</option>
+                  </select>
+                </div>
+                <button
+                  type="submit"
+                  disabled={isAdding || !newTodoTitle.trim()}
+                  className="px-6 py-2 text-white rounded-full hover:opacity-90 disabled:opacity-50 transition"
+                  style={{ backgroundColor: 'black' }}
+                >
+                  {isAdding ? 'Adding...' : 'Add Todo'}
+                </button>
+              </div>
             </form>
           </div>
         </div>
@@ -199,49 +248,42 @@ export default function TodosPage() {
       {/* Pending and Completed Sections */}
       <div className="grid md:grid-cols-2 gap-6">
         {/* Pending Section */}
-        <div className="bg-white rounded-3xl shadow-lg p-6">
-          <h3 className="text-lg font-semibold mb-4 pb-2 border-b text-black">
+        <div className="bg-white rounded-3xl shadow-lg p-6" style={{ backgroundColor: 'white' }}>
+          <h3 className="text-lg font-semibold mb-4 pb-2 border-b" style={{ color: 'black', borderColor: '#d1d5db' }}>
             Pending ({pendingTodos.length})
           </h3>
 
           {pendingTodos.length === 0 ? (
-            <p className="text-gray-600 text-center py-8">No pending todos</p>
+            <p className="text-pink-600 text-center py-8" style={{ color: '#ff69b4' }}>No pending todos</p>
           ) : (
             <div className="space-y-3">
               {pendingTodos.map((todo) => (
                 <div
                   key={todo.id}
                   className="bg-gray-50 rounded-2xl shadow p-4 flex items-center gap-4"
+                  style={{ backgroundColor: 'rgba(0, 0, 0, 0.02)' }}
                 >
                   <input
                     type="checkbox"
                     checked={todo.is_complete}
                     onChange={() => handleToggle(todo.id)}
                     className="w-5 h-5"
-                    style={{ accentColor: 'black' }}
+                    style={{ accentColor: '#ff69b4' }}
                   />
                   <div className="flex-1">
-                    <h3 className="font-medium text-black">{todo.title}</h3>
+                    <h3 className="font-medium" style={{ color: 'black' }}>{todo.title}</h3>
                     {todo.description && (
-                      <p className="text-sm text-gray-700 mt-1">{todo.description}</p>
+                      <p className="text-sm text-gray-700 mt-1" style={{ color: 'black' }}>{todo.description}</p>
                     )}
-                    <p className="text-xs text-gray-500 mt-2">
+                    <p className="text-xs text-gray-500 mt-2" style={{ color: 'black' }}>
                       Created: {mounted ? new Date(todo.created_at).toLocaleDateString() : ''}
                     </p>
                   </div>
                   <div className="flex gap-2">
-                    <Link
-                      href={`/todos/${todo.id}`}
-                      className="px-3 py-1 text-sm rounded-full text-gray-500 hover:text-green-500 transition-colors"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                        <path d="m15 5 4 4" />
-                      </svg>
-                    </Link>
                     <button
                       onClick={() => handleDelete(todo.id)}
-                      className="px-3 py-1 text-sm rounded-full text-gray-500 hover:text-red-500 transition-colors"
+                      className="px-3 py-1 text-sm rounded-full text-gray-500 hover:text-pink-700 transition-colors"
+                      style={{ color: 'black' }}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M3 6h18" />
@@ -257,49 +299,42 @@ export default function TodosPage() {
         </div>
 
         {/* Completed Section */}
-        <div className="bg-white rounded-3xl shadow-lg p-6">
-          <h3 className="text-lg font-semibold mb-4 pb-2 border-b text-black">
+        <div className="bg-white rounded-3xl shadow-lg p-6" style={{ backgroundColor: 'white' }}>
+          <h3 className="text-lg font-semibold mb-4 pb-2 border-b" style={{ color: 'black', borderColor: '#d1d5db' }}>
             Completed ({completedTodos.length})
           </h3>
 
           {completedTodos.length === 0 ? (
-            <p className="text-gray-600 text-center py-8">No completed todos yet</p>
+            <p className="text-pink-600 text-center py-8" style={{ color: '#ff69b4' }}>No completed todos yet</p>
           ) : (
             <div className="space-y-3">
               {completedTodos.map((todo) => (
                 <div
                   key={todo.id}
                   className="bg-gray-50 rounded-2xl shadow p-4 flex items-center gap-4"
+                  style={{ backgroundColor: 'rgba(0, 0, 0, 0.02)' }}
                 >
                   <input
                     type="checkbox"
                     checked={todo.is_complete}
                     onChange={() => handleToggle(todo.id)}
                     className="w-5 h-5"
-                    style={{ accentColor: 'black' }}
+                    style={{ accentColor: '#ff69b4' }}
                   />
                   <div className="flex-1">
-                    <h3 className="font-medium line-through text-gray-500">{todo.title}</h3>
+                    <h3 className="font-medium line-through" style={{ color: 'black', textDecorationColor: 'black' }}>{todo.title}</h3>
                     {todo.description && (
-                      <p className="text-sm text-gray-500 mt-1 line-through">{todo.description}</p>
+                      <p className="text-sm text-gray-500 mt-1 line-through" style={{ color: 'black', textDecorationColor: 'black' }}>{todo.description}</p>
                     )}
-                    <p className="text-xs text-gray-400 mt-2">
+                    <p className="text-xs text-gray-400 mt-2" style={{ color: 'black' }}>
                       Created: {mounted ? new Date(todo.created_at).toLocaleDateString() : ''}
                     </p>
                   </div>
                   <div className="flex gap-2">
-                    <Link
-                      href={`/todos/${todo.id}`}
-                      className="px-3 py-1 text-sm rounded-full text-gray-500 hover:text-green-500 transition-colors"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                        <path d="m15 5 4 4" />
-                      </svg>
-                    </Link>
                     <button
                       onClick={() => handleDelete(todo.id)}
-                      className="px-3 py-1 text-sm rounded-full text-gray-500 hover:text-red-500 transition-colors"
+                      className="px-3 py-1 text-sm rounded-full text-gray-500 hover:text-pink-700 transition-colors"
+                      style={{ color: 'black' }}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M3 6h18" />

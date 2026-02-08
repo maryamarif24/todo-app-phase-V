@@ -18,7 +18,7 @@
  * - Icon-only or with text
  */
 
-export function Logo({ className = "", size = 40 }: { className?: string; size?: number }) {
+export default function Logo({ className = "", size = 40 }: { className?: string; size?: number }) {
   return (
     <svg
       className={className}

@@ -157,7 +157,12 @@ export async function apiFetch<T>(
     }
 
     console.error('Network error:', error); // Debug log
-    const errorMessage = error instanceof Error ? error.message : 'Network error';
+    let errorMessage = 'Network error';
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      errorMessage = 'Failed to connect to the server. Please check that the backend API is running and accessible.';
+    } else {
+      errorMessage = error instanceof Error ? error.message : 'Network error';
+    }
     return { data: null, error: errorMessage };
   }
 }

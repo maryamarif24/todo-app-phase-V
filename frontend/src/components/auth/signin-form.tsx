@@ -39,7 +39,7 @@ export function SigninForm() {
     if (response.data) {
       // Store auth state and redirect to todos page
       signin(response.data.user, response.data.session);
-      router.push('/todos');
+      router.push('/dashboard');
     }
   };
 

@@ -59,18 +59,29 @@ export function SignupForm() {
     }
 
     const request: SignupRequest = { email, password };
-    const response = await api.post<SignupResponse>('/auth/signup', request);
 
-    if (response.error) {
-      setError(response.error);
+    try {
+      const response = await api.post<SignupResponse>('/auth/signup', request);
+
+      if (response.error) {
+        setError(response.error);
+        setLoading(false);
+        console.error('Signup error:', response.error);
+        return;
+      }
+
+      if (response.data) {
+        // Auto signin after successful signup and redirect to home page
+        signin(response.data.user, response.data.session);
+        router.push('/');
+      } else {
+        setError('Unexpected response format from server');
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error('Network error during signup:', err);
+      setError('Failed to connect to the server. Please check that the backend is running and try again.');
       setLoading(false);
-      return;
-    }
-
-    if (response.data) {
-      // Auto signin after successful signup and redirect to todos page
-      signin(response.data.user, response.data.session);
-      router.push('/todos');
     }
   };
 

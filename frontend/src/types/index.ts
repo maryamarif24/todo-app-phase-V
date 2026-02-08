@@ -24,6 +24,7 @@ export interface Todo {
   title: string;
   description: string | null;
   is_complete: boolean;
+  priority: 'LOW' | 'MEDIUM' | 'HIGH';
   created_at: string;
   updated_at: string;
 }

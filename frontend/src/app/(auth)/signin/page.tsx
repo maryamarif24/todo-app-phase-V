@@ -13,7 +13,7 @@ export default function SigninPage() {
   // Redirect to todos if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      router.push('/todos');
+      router.push('/dashboard');
     }
   }, [isAuthenticated, router]);
 
@@ -23,7 +23,7 @@ export default function SigninPage() {
       <SigninForm />
       <p className="mt-4 text-center text-sm" style={{ color: "#7F1734" }}>
         Don&apos;t have an account?{' '}
-        <Link href="/signup" className="text-green-600 hover:underline">
+        <Link href="/signup" className="text-blue-600 hover:underline">
           Sign up
         </Link>
       </p>
