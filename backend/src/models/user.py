@@ -6,10 +6,13 @@ for user-specific todo data isolation.
 """
 
 from datetime import datetime
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 import uuid
 
 from sqlmodel import SQLModel, Field, Relationship
+
+if TYPE_CHECKING:
+    from .entities import Todo  # Only import what's definitely available
 
 
 class User(SQLModel, table=True):
@@ -32,8 +35,12 @@ class User(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
-    # Relationship to todos (will be resolved after Todo is defined)
+    # Relationships to entities (will be resolved after other models are defined)
     todos: List["Todo"] = Relationship(back_populates="user")
+    # Phase 5 relationships are defined as string references to avoid circular imports
+    tasks: List["Task"] = Relationship(back_populates="user")
+    tags: List["Tag"] = Relationship(back_populates="user")
+    recurring_patterns: List["RecurringTaskPattern"] = Relationship(back_populates="user")
 
 
 # Re-export for convenience

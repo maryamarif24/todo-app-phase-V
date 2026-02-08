@@ -7,9 +7,11 @@ Optimized for Neon PostgreSQL with sync database operations.
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session
 from datetime import datetime, timedelta, timezone
+from typing import Optional
+import uuid
 
-from ...models import User
-from ...services import get_user_by_email, create_user, verify_password
+from ...models.user import User
+from ...services.user_service import get_user_by_email, create_user as create_user_db, verify_password
 from ..dependencies import get_db, get_current_user
 from ...auth.schemas import (
     SignupRequest,
@@ -25,7 +27,7 @@ router = APIRouter()
 
 
 @router.post("/signup", response_model=SignupResponse, status_code=status.HTTP_201_CREATED)
-async def signup(
+def signup(
     request: SignupRequest,
     db: Session = Depends(get_db),
 ):
@@ -50,15 +52,15 @@ async def signup(
             detail="Email already registered",
         )
 
-    # Create new user (password is hashed in create_user)
-    user = create_user(db, request.email, request.password)
+    # Create new user (password is hashed in create_user_db)
+    user = create_user_db(db, request.email, request.password)
     db.add(user)
     db.commit()
     db.refresh(user)
 
     # Create session for auto-login after signup
     # Ensure consistent UUID string representation
-    session_token = str(user.id).lower()  # Ensure user.id is converted to lowercase string UUID
+    session_token = str(user.id)  # Convert user.id to string UUID
     expires_at = datetime.now(timezone.utc) + timedelta(hours=settings.jwt_expiration_hours)
 
     return SignupResponse(
@@ -74,7 +76,7 @@ async def signup(
 
 
 @router.post("/signin", response_model=SigninResponse)
-async def signin(
+def signin(
     request: SigninRequest,
     db: Session = Depends(get_db),
 ):
@@ -100,7 +102,7 @@ async def signin(
         )
 
     # Create session (simplified - using user ID as token for demo)
-    session_token = str(user.id).lower()  # Ensure user.id is converted to lowercase string UUID
+    session_token = str(user.id)  # Convert user.id to string UUID
 
     # Calculate expiration time (same as signup)
     expires_at = datetime.now(timezone.utc) + timedelta(hours=settings.jwt_expiration_hours)
@@ -118,7 +120,7 @@ async def signin(
 
 
 @router.post("/signout", response_model=SignoutResponse)
-async def signout(
+def signout(
     current_user: User = Depends(get_current_user),
 ):
     """

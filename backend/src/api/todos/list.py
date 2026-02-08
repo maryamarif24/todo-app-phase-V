@@ -30,6 +30,7 @@ class CreateTodoRequest(BaseModel):
 
     title: str = Field(..., min_length=1, max_length=200, description="Todo title")
     description: Optional[str] = Field(None, max_length=2000, description="Optional description")
+    priority: Optional[str] = Field("MEDIUM", description="Task priority level (LOW, MEDIUM, HIGH)")
 
 
 class CreateTodoResponse(BaseModel):
@@ -164,11 +165,20 @@ async def create_todo_endpoint(
                 detail="Todo description must be 2000 characters or less",
             )
 
+        # Validate priority if provided
+        priority = request.priority or "MEDIUM"
+        if priority not in ["LOW", "MEDIUM", "HIGH"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Priority must be LOW, MEDIUM, or HIGH",
+            )
+
         todo = create_todo(
             db,
             current_user.id,
             title,
             description,
+            priority=priority,
         )
         db.add(todo)
         db.commit()
@@ -256,6 +266,7 @@ async def update_todo_endpoint(
         title=request.title,
         description=request.description,
         is_complete=request.is_complete,
+        priority=request.priority,
     )
     db.commit()
     db.refresh(updated_todo)

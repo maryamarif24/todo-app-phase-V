@@ -16,23 +16,34 @@ load_dotenv()
 # Database URL from environment variable
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://user:password@ep-xyz.region.neon.tech/dbname?sslmode=require"
+    "sqlite:///./todo_local.db"  # Use SQLite for local development
 )
 
 # Create sync engine for SQLModel (optimized for Neon PostgreSQL)
-sync_engine = create_engine(
-    DATABASE_URL,
-    echo=False,
-    pool_size=5,
-    max_overflow=10,
-    pool_pre_ping=True,
-    pool_recycle=300,  # Reduced recycle time for Neon
-    connect_args={
-        "sslmode": "require",
-        "connect_timeout": 10,
-        # Removed statement_timeout options as they're not supported by Neon
-    }
-)
+if DATABASE_URL.startswith("sqlite"):
+    # SQLite configuration
+    sync_engine = create_engine(
+        DATABASE_URL,
+        echo=False,
+        connect_args={
+            "check_same_thread": False,  # Required for SQLite
+        }
+    )
+else:
+    # PostgreSQL configuration
+    sync_engine = create_engine(
+        DATABASE_URL,
+        echo=False,
+        pool_size=5,
+        max_overflow=10,
+        pool_pre_ping=True,
+        pool_recycle=300,  # Reduced recycle time for Neon
+        connect_args={
+            "sslmode": "require",
+            "connect_timeout": 10,
+            # Removed statement_timeout options as they're not supported by Neon
+        }
+    )
 
 
 def get_db() -> Generator[Session, None, None]:

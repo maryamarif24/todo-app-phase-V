@@ -1,21 +1,14 @@
 <!--
 Sync Impact Report:
-- Version change: 2.1.0 → 2.2.0
-- Modified technologies in Phase Technology Matrix:
-  - FastAPI: Phase III → Phase II
-  - SQLModel: Phase III → Phase II
-  - Neon DB: Phase III → Phase II
-  - Next.js: Phase IV → Phase II
-  - Better Auth: Phase II
-  - OpenAI Agents SDK: Phase IV → Phase III
-  - MCP: Phase IV → Phase III
-- Added technologies: None
-- Removed technologies: None
+- Version change: 2.2.0 → 2.3.0
+- Modified principles: None
+- Added sections: New event-driven architecture principles, enhanced UX principles, Dapr-readiness requirements
+- Removed sections: None
 - Templates requiring updates:
-  ✅ .specify/templates/plan-template.md (no constitution-specific mandates)
-  ✅ .specify/templates/spec-template.md (no constitution-specific mandates)
-  ✅ .specify/templates/tasks-template.md (no constitution-specific mandates)
-- Follow-up TODOs: (none)
+  ✅ .specify/templates/plan-template.md (updated for event-driven architecture)
+  ✅ .specify/templates/spec-template.md (updated for advanced features)
+  ✅ .specify/templates/tasks-template.md (updated for event-driven tasks)
+- Follow-up TODOs: None
 -->
 
 # Evolution of Todo Constitution
@@ -55,8 +48,11 @@ All code and architecture MUST adhere to quality standards:
 4. **Cloud-Native Readiness**: Architecture is designed for cloud deployment from the beginning (even in early phases).
 5. **Stateless MCP Tools**: MCP tools MUST NOT store in-memory state and MUST rely on database persistence for all state management.
 6. **Agent-Database Interaction**: AI agents MAY ONLY interact with the system via MCP tools; direct database access is prohibited.
+7. **Event-Driven Architecture**: System components communicate via events and asynchronous messaging. Services SHOULD publish events when state changes occur and subscribe to events to react appropriately.
+8. **Dapr-Ready Design**: Architecture MUST be compatible with distributed application runtime patterns. Components SHOULD be designed to work with sidecar architectures and distributed primitives.
+9. **Professional UX**: User interfaces MUST provide intuitive navigation, responsive design, and polished user experience suitable for production applications.
 
-**Rationale**: Quality principles ensure code maintains viability across phase evolution. Clean architecture supports incremental complexity without refactoring. MCP statelessness ensures reliable agent operations.
+**Rationale**: Quality principles ensure code maintains viability across phase evolution. Clean architecture supports incremental complexity without refactoring. MCP statelessness ensures reliable agent operations. Event-driven patterns enable scalability and loose coupling. Dapr-ready design prepares the system for distributed deployment. Professional UX ensures market readiness.
 
 ## Technology Constraints
 
@@ -85,6 +81,9 @@ All code and architecture MUST adhere to quality standards:
 - **Kubernetes**: Container orchestration (Phase IV+)
 - **Kafka**: Event streaming and message queues (Phase IV+)
 - **Dapr**: Distributed application runtime (Phase V)
+- **Event Streaming**: Event-driven architecture patterns (Phase IV+)
+- **Message Queues**: Asynchronous messaging systems (Phase IV+)
+- **Event Stores**: Event sourcing and CQRS patterns (Phase IV+)
 
 ### Prohibited Technologies
 - **Unauthorized Persistence**: Any database or storage not in approved stack (e.g., MongoDB, Redis, filesystem persistence beyond Phase I)
@@ -96,6 +95,8 @@ All code and architecture MUST adhere to quality standards:
 - **Alternative Messaging**: Kafka alternatives (e.g., RabbitMQ, AWS SQS) unless formally approved
 - **Direct Database Access**: AI agents MUST NOT access database directly; all access MUST be via MCP tools
 - **In-Memory State in MCP Tools**: MCP tools MUST NOT store state in memory; all state MUST be persisted in database
+- **Synchronous Monolithic Communication**: Direct synchronous calls between services without event-driven patterns (use event-driven architecture instead)
+- **Hardcoded Business Logic**: Complex business logic MUST be implemented with configurable event flows, not hardcoded sequences
 
 ### Permitted Libraries
 - **Python Standard Library**: Preferred for all simple tasks
@@ -107,15 +108,25 @@ All code and architecture MUST adhere to quality standards:
   - Clean architecture (domain-driven, hexagonal, or layered)
   - Repository pattern (for database interactions)
   - Service layer pattern
-  - CQRS (when appropriate for read/write separation)
+  - CQRS (Command Query Responsibility Segregation) for read/write separation
+  - Event Sourcing for maintaining system state as sequence of events
+  - Event-Driven Architecture with asynchronous messaging
+  - Saga Pattern for distributed transaction management
+  - Circuit Breaker pattern for resilient service communication
   - Agent-driven task management
   - Database-backed state management
+  - Dapr Building Blocks patterns (service invocation, state management, pub/sub, etc.)
+  - Sidecar patterns for infrastructure concerns
+  - API Gateway patterns for request routing and transformation
+  - Microservice architecture (Phase IV+)
 - **PROHIBITED**:
   - Over-engineering patterns not justified by phase requirements
   - Design patterns that add unnecessary abstraction
   - Framework-specific lock-in patterns
   - In-memory state management in MCP tools
   - Direct database access by AI agents
+  - Tight coupling between services without event mediation
+  - Synchronous blocking communication between services
 
 ## Phase Technology Matrix
 
@@ -134,8 +145,13 @@ All code and architecture MUST adhere to quality standards:
 | OpenAI Agents SDK | ❌ | ❌ | ✅ | ✅ | ✅ |
 | MCP | ❌ | ❌ | ✅ | ✅ | ✅ |
 | Kubernetes | ❌ | ❌ | ❌ | ✅ | ✅ |
-| Kafka | ❌ | ❌ | ❌ | ❌ | ✅ |
-| Dapr | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Kafka | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Dapr | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Event Streaming | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Message Queues | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Event Sourcing | ❌ | ❌ | ❌ | ✅ | ✅ |
+| CQRS | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Professional UI/UX | ❌ | ✅ | ✅ | ✅ | ✅ |
 
 **Notes**:
 - ✅ = Technology is in scope for this phase
@@ -180,9 +196,12 @@ All code and architecture MUST adhere to quality standards:
 - All previous phase technologies continue
 
 ### Phase V: Distributed Systems
-- Dapr for distributed application runtime
-- Kafka for event streaming
-- Full microservices architecture
+- Dapr for distributed application runtime with sidecar architecture
+- Event streaming and message queuing for asynchronous communication
+- Full microservices architecture with event-driven patterns
+- Advanced CQRS and event sourcing implementations
+- Distributed tracing and observability
+- Resilient communication with circuit breakers and retry patterns
 - All previous phase technologies continue
 
 ## Development Workflow
@@ -213,6 +232,9 @@ All code and architecture MUST adhere to quality standards:
 - Code violating principles MUST be rejected, even if it "works"
 - Technology outside approved phase scope MUST be rejected
 - MCP tools MUST be stateless and rely on database persistence
+- Event-driven components MUST follow asynchronous messaging patterns
+- Dapr-ready implementations MUST be designed for sidecar architecture compatibility
+- UX implementations MUST meet professional design standards
 
 ### Testing Discipline
 - Tests are OPTIONAL unless explicitly requested in spec
@@ -255,4 +277,4 @@ This constitution is the supreme governing document for the "Evolution of Todo" 
 ### Scope Boundaries
 This constitution governs Phase I through Phase V of the "Evolution of Todo" project. Each phase is scoped independently by its specification, but all phases remain bound by these core principles and governance rules. Phases beyond V require formal constitution amendment.
 
-**Version**: 2.2.0 | **Ratified**: 2024-12-24 | **Last Amended**: 2026-01-06
+**Version**: 2.3.0 | **Ratified**: 2024-12-24 | **Last Amended**: 2026-02-05

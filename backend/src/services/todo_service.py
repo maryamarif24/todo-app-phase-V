@@ -55,16 +55,24 @@ def create_todo(
     session: Session,
     user_id: uuid.UUID,
     title: str,
-    description: Optional[str] = None
+    description: Optional[str] = None,
+    priority: str = "MEDIUM",
+    due_date: Optional[datetime] = None,
+    reminder_enabled: bool = False,
+    reminder_time: Optional[str] = None
 ) -> Todo:
     """
-    Create a new todo for a user.
+    Create a new todo for a user with advanced features.
 
     Args:
         session: Database session
         user_id: Owning user's UUID
-        title: Todo title (1-200 chars)
+        title: Todo title (1-255 chars)
         description: Optional todo description
+        priority: Task priority level (LOW, MEDIUM, HIGH) - Default: MEDIUM
+        due_date: Optional deadline for task completion
+        reminder_enabled: Whether reminder notifications are enabled - Default: False
+        reminder_time: Time before due_date to trigger reminder
 
     Returns:
         Created Todo instance
@@ -73,6 +81,10 @@ def create_todo(
         user_id=user_id,
         title=title,
         description=description,
+        priority=priority,
+        due_date=due_date,
+        reminder_enabled=reminder_enabled,
+        reminder_time=reminder_time
     )
     return todo
 
@@ -82,10 +94,14 @@ def update_todo(
     todo_id: uuid.UUID,
     title: Optional[str] = None,
     description: Optional[str] = None,
-    is_complete: Optional[bool] = None
+    is_complete: Optional[bool] = None,
+    priority: Optional[str] = None,
+    due_date: Optional[datetime] = None,
+    reminder_enabled: Optional[bool] = None,
+    reminder_time: Optional[str] = None
 ) -> Optional[Todo]:
     """
-    Update an existing todo.
+    Update an existing todo with advanced features.
 
     Args:
         session: Database session
@@ -93,6 +109,10 @@ def update_todo(
         title: New title (optional)
         description: New description (optional)
         is_complete: New completion status (optional)
+        priority: New priority level (optional)
+        due_date: New due date (optional)
+        reminder_enabled: New reminder enabled status (optional)
+        reminder_time: New reminder time (optional)
 
     Returns:
         Updated Todo instance if found, None otherwise
@@ -115,6 +135,16 @@ def update_todo(
     elif is_complete is None and hasattr(todo, 'is_complete'):
         # If is_complete is not provided but todo was previously completed and is now incomplete
         pass  # Don't change completed_at
+
+    # Update new advanced features
+    if priority is not None:
+        todo.priority = priority
+    if due_date is not None:
+        todo.due_date = due_date
+    if reminder_enabled is not None:
+        todo.reminder_enabled = reminder_enabled
+    if reminder_time is not None:
+        todo.reminder_time = reminder_time
 
     todo.updated_at = datetime.utcnow()
     return todo
