@@ -1,0 +1,252 @@
+{
+  "version": "1.0.0",
+  "description": "Event contracts for task management system with event-driven architecture",
+  "events": [
+    {
+      "name": "TaskCreated",
+      "version": "1.0.0",
+      "description": "Emitted when a new task is created",
+      "schema": {
+        "type": "object",
+        "required": ["event_id", "timestamp", "task_id", "user_id"],
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier for the event"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the event occurred"
+          },
+          "task_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID of the task that was created"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID of the user who owns the task"
+          },
+          "payload": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "maxLength": 255
+              },
+              "priority": {
+                "type": "string",
+                "enum": ["LOW", "MEDIUM", "HIGH"]
+              },
+              "due_date": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 10
+              },
+              "reminder_enabled": {
+                "type": "boolean",
+                "default": false
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "TaskUpdated",
+      "version": "1.0.0",
+      "description": "Emitted when an existing task is modified",
+      "schema": {
+        "type": "object",
+        "required": ["event_id", "timestamp", "task_id", "user_id"],
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier for the event"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the event occurred"
+          },
+          "task_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID of the task that was updated"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID of the user who owns the task"
+          },
+          "payload": {
+            "type": "object",
+            "properties": {
+              "updated_fields": {
+                "type": "object",
+                "description": "Map of fields that were updated",
+                "additionalProperties": true
+              },
+              "previous_values": {
+                "type": "object",
+                "description": "Previous values before the update"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "TaskCompleted",
+      "version": "1.0.0",
+      "description": "Emitted when a task is marked as completed",
+      "schema": {
+        "type": "object",
+        "required": ["event_id", "timestamp", "task_id", "user_id"],
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier for the event"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the event occurred"
+          },
+          "task_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID of the task that was completed"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID of the user who owns the task"
+          },
+          "payload": {
+            "type": "object",
+            "properties": {
+              "completed_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ReminderTriggered",
+      "version": "1.0.0",
+      "description": "Emitted when a task reminder is triggered",
+      "schema": {
+        "type": "object",
+        "required": ["event_id", "timestamp", "task_id", "user_id"],
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier for the event"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the event occurred"
+          },
+          "task_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID of the task with the reminder"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID of the user who owns the task"
+          },
+          "payload": {
+            "type": "object",
+            "properties": {
+              "reminder_time": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "delivery_method": {
+                "type": "string",
+                "enum": ["email", "push_notification", "webhook"]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "RecurringTaskGenerated",
+      "version": "1.0.0",
+      "description": "Emitted when a new instance of a recurring task is generated",
+      "schema": {
+        "type": "object",
+        "required": ["event_id", "timestamp", "new_task_id", "original_task_id", "user_id"],
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier for the event"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the event occurred"
+          },
+          "new_task_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID of the new generated task instance"
+          },
+          "original_task_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID of the original recurring task template"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID of the user who owns the task"
+          },
+          "payload": {
+            "type": "object",
+            "properties": {
+              "generated_for_date": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "recurrence_pattern": {
+                "type": "string",
+                "enum": ["DAILY", "WEEKLY", "MONTHLY"]
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "created_at": "2026-02-05T00:00:00Z",
+    "last_updated": "2026-02-05T00:00:00Z",
+    "compliance": {
+      "standards": ["Kafka-compatible", "Dapr-ready"],
+      "validation": "JSON Schema Draft 2020-12"
+    }
+  }
+}

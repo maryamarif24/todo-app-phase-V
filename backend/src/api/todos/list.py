@@ -41,6 +41,8 @@ class CreateTodoResponse(BaseModel):
     title: str
     description: Optional[str]
     is_complete: bool
+    priority: Optional[str] = Field(None, description="Task priority level")
+    due_date: Optional[str] = Field(None, description="Due date")
     created_at: str
     updated_at: str
 
@@ -61,6 +63,8 @@ class TodoResponse(BaseModel):
     title: str
     description: Optional[str]
     is_complete: bool
+    priority: Optional[str] = Field(None, description="Task priority level")
+    due_date: Optional[str] = Field(None, description="Due date")
     created_at: str
     updated_at: str
 
@@ -114,6 +118,8 @@ async def list_todos(
                 title=todo.title,
                 description=todo.description,
                 is_complete=todo.is_complete,
+                priority=todo.priority,
+                due_date=todo.due_date.isoformat() if todo.due_date else None,
                 created_at=todo.created_at.isoformat(),
                 updated_at=todo.updated_at.isoformat(),
             )

@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/auth/auth-provider';
+import { LogOut, Settings, MoreVertical, Send, X, MessageSquare } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -22,9 +23,9 @@ export default function FloatingChatWidget() {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([
-    { id: 'floating-chat', messages: [] } // Single conversation for the floating widget
+    { id: 'floating-chat', messages: [] } 
   ]);
-  const [currentConversationId] = useState<string>('floating-chat'); // Fixed ID for floating widget
+  const [currentConversationId] = useState<string>('floating-chat');
   const [error, setError] = useState('');
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -38,16 +39,14 @@ export default function FloatingChatWidget() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Initialize with an empty conversation when user authenticates
+  // Reset conversation when user authenticates
   useEffect(() => {
     if (isAuthenticated && user) {
-      // Reset conversation when user authenticates
       setConversations([{ id: 'floating-chat', messages: [] }]);
     }
   }, [isAuthenticated, user]);
 
   const getCurrentConversation = () => {
-    // Get the fixed conversation for the floating widget
     return conversations.find(conv => conv.id === currentConversationId);
   };
 
@@ -61,7 +60,6 @@ export default function FloatingChatWidget() {
       timestamp: new Date().toISOString(),
     };
 
-    // Add user message to current conversation (local only for UI)
     setConversations(prev =>
       prev.map(conv =>
         conv.id === currentConversationId
@@ -70,18 +68,17 @@ export default function FloatingChatWidget() {
       )
     );
 
+    const messageToSend = inputValue;
     setInputValue('');
     setIsLoading(true);
     setError('');
 
     try {
-      // Send message to backend API using the new todo-operation endpoint
-      // This endpoint doesn't store conversation history in the database
       const response = await api.post<{
         response: string;
         timestamp: string;
       }>('/chat/todo-operation', {
-        message: inputValue,
+        message: messageToSend,
       });
 
       if (response.error) {
@@ -97,7 +94,6 @@ export default function FloatingChatWidget() {
           timestamp: response.data.timestamp,
         };
 
-        // Update conversation with AI response (local only)
         setConversations(prev =>
           prev.map(conv =>
             conv.id === currentConversationId
@@ -106,25 +102,25 @@ export default function FloatingChatWidget() {
           )
         );
 
-        // Check if the response contains todo operations and trigger refresh
         const responseText = response.data.response.toLowerCase();
-        if (responseText.includes('[success]') ||
-            responseText.includes('created') ||
-            responseText.includes('added') ||
-            responseText.includes('deleted') ||
-            responseText.includes('removed') ||
-            responseText.includes('completed') ||
-            responseText.includes('marked as') ||
-            responseText.includes('updated') ||
-            responseText.includes('todo') ||
-            responseText.includes('task')) {
-          // Dispatch a custom event to notify other components to refresh
+        if (
+          responseText.includes('[success]') ||
+          responseText.includes('created') ||
+          responseText.includes('added') ||
+          responseText.includes('deleted') ||
+          responseText.includes('removed') ||
+          responseText.includes('completed') ||
+          responseText.includes('marked as') ||
+          responseText.includes('updated') ||
+          responseText.includes('todo') ||
+          responseText.includes('task')
+        ) {
+          // Dispatch event to refresh tasks in dashboard
           window.dispatchEvent(new CustomEvent('refreshTasks'));
         }
       }
     } catch (err) {
       setError('Failed to send message. Please try again.');
-      console.error('Chat error:', err);
     } finally {
       setIsLoading(false);
     }
@@ -140,7 +136,7 @@ export default function FloatingChatWidget() {
   const toggleChat = () => {
     if (!isAuthenticated) {
       setShowAuthPrompt(true);
-      setTimeout(() => setShowAuthPrompt(false), 3000); // Hide after 3 seconds
+      setTimeout(() => setShowAuthPrompt(false), 3000);
       return;
     }
     setIsOpen(!isOpen);
@@ -150,110 +146,66 @@ export default function FloatingChatWidget() {
 
   return (
     <>
-      {/* Floating Chat Icon */}
+      {/* Floating Chat Button */}
       <div className="fixed bottom-6 right-6 z-50">
         <button
           onClick={toggleChat}
-          className="w-14 h-14 rounded-full bg-pink-500 text-white flex items-center justify-center shadow-lg hover:bg-pink-600 transition-all duration-300 transform hover:scale-110"
-          aria-label="Open chat"
+          className="w-14 h-14 rounded-full bg-[#ec4899] text-white flex items-center justify-center shadow-[0_8px_25px_rgba(236,72,153,0.4)] hover:bg-[#db2777] transition-all duration-300 transform hover:scale-110 active:scale-95"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-            className="w-6 h-6"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
+          <MessageSquare className="w-6 h-6" />
         </button>
       </div>
 
-      {/* Authentication Prompt */}
+      {/* Auth Prompt Toast */}
       {showAuthPrompt && (
-        <div className="fixed bottom-24 right-6 z-50 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg animate-fadeInOut">
-          Please sign in to use the chat feature.
+        <div className="fixed bottom-24 right-6 z-50 bg-gray-900/90 backdrop-blur-md text-white px-6 py-3 rounded-2xl shadow-xl animate-in fade-in slide-in-from-bottom-4">
+          <p className="text-sm font-bold">Please sign in to use the assistant</p>
         </div>
       )}
 
       {/* Chat Modal */}
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-30">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] w-full max-w-md h-[600px] max-h-[85vh] flex flex-col overflow-hidden border border-white/20">
+            
             {/* Header */}
-            <div
-              className="p-4 border-b flex justify-between items-center rounded-t-3xl"
-              style={{
-                background: 'linear-gradient(135deg, #ff6b9d 0%, #c44569 100%)',
-                color: 'white'
-              }}
-            >
-              <h2 className="text-lg font-bold">Todo Assistant</h2>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="text-white hover:text-pink-100"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                  className="w-6 h-6"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
+            <div className="p-6 bg-gradient-to-r from-[#ec4899] to-[#db2777] text-white flex justify-between items-center shadow-md">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white/20 rounded-xl backdrop-blur-md">
+                  <MessageSquare className="w-5 h-5 text-white" />
+                </div>
+                <h2 className="text-lg font-black tracking-tight">Todo Assistant</h2>
+              </div>
+              <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                <X className="w-6 h-6" />
               </button>
             </div>
 
-            {/* Messages Container */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {!isAuthenticated ? (
-                <div className="text-center py-8 text-gray-500">
-                  <p>Please sign in to use the chat feature.</p>
-                </div>
-              ) : currentConv && currentConv.messages.length > 0 ? (
+            {/* Messages Area */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50/50">
+              {currentConv && currentConv.messages.length > 0 ? (
                 currentConv.messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div
-                      className={`max-w-[80%] rounded-3xl p-3 ${
+                  <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-2`}>
+                    <div className={`max-w-[85%] rounded-[1.5rem] px-4 py-3 shadow-sm ${
                         message.role === 'user'
-                          ? 'bg-pink-500 text-white rounded-br-none'
-                          : 'bg-pink-100 text-pink-800 rounded-bl-none'
-                      }`}
-                    >
-                      <div className="whitespace-pre-wrap text-sm">{message.content}</div>
-                      <div
-                        className={`text-xs mt-1 ${
-                          message.role === 'user' ? 'text-pink-100' : 'text-pink-600'
-                        }`}
-                      >
-                        {new Date(message.timestamp).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </div>
+                          ? 'bg-[#ec4899] text-white rounded-br-none'
+                          : 'bg-white border border-pink-100 text-gray-800 rounded-bl-none'
+                      }`}>
+                      <p className="text-sm leading-relaxed font-medium">{message.content}</p>
+                      <span className={`text-[10px] mt-2 block opacity-70 font-bold ${message.role === 'user' ? 'text-white' : 'text-pink-500'}`}>
+                        {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="flex items-center justify-center h-full text-gray-500">
-                  <div className="text-center">
-                    <div className="text-4xl mb-2">💬</div>
-                    <h3 className="font-medium">Start a conversation</h3>
-                    <p className="text-sm mt-1">Ask me to help manage your todos!</p>
+                <div className="flex flex-col items-center justify-center h-full text-center space-y-4 opacity-40">
+                  <div className="w-20 h-20 bg-pink-100 rounded-full flex items-center justify-center">
+                    <MessageSquare className="w-10 h-10 text-pink-500" />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-gray-900">Start a conversation</h3>
+                    <p className="text-sm text-gray-500">Ask me to add or manage your tasks!</p>
                   </div>
                 </div>
               )}
@@ -261,58 +213,37 @@ export default function FloatingChatWidget() {
             </div>
 
             {/* Input Area */}
-            <div className="border-t p-3 bg-pink-50 rounded-b-3xl">
+            <div className="p-6 bg-white border-t border-gray-100">
               {error && (
-                <div className="mb-2 p-2 bg-red-100 text-red-700 rounded-xl text-sm">
+                <div className="mb-3 p-3 bg-red-50 text-red-600 rounded-xl text-xs font-bold border border-red-100">
                   {error}
                 </div>
               )}
-              <div className="flex gap-2">
+              <div className="flex gap-2 relative">
                 <input
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Ask about your todos..."
-                  className="flex-1 border border-pink-300 rounded-2xl px-4 py-2 focus:outline-none focus:ring-2 text-sm"
-                  style={{
-                    '--tw-ring-color': '#ff6b9d'
-                  } as React.CSSProperties}
-                  disabled={isLoading || !isAuthenticated}
+                  placeholder="Type a task..."
+                  /* FIX: text-pink-700 ensures dark pink typing color */
+                  className="flex-1 bg-gray-50 border border-gray-200 rounded-2xl px-5 py-3 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 text-sm font-bold text-pink-700 placeholder-pink-300 transition-all"
+                  disabled={isLoading}
                 />
                 <button
                   onClick={sendMessage}
-                  disabled={isLoading || !inputValue.trim() || !isAuthenticated}
-                  className="px-4 py-2 bg-pink-500 text-white rounded-2xl hover:bg-pink-600 disabled:opacity-50 transition text-sm"
+                  disabled={isLoading || !inputValue.trim()}
+                  className="p-3 bg-[#ec4899] text-white rounded-2xl hover:bg-[#db2777] disabled:opacity-50 transition-all shadow-lg shadow-pink-100 active:scale-95"
                 >
                   {isLoading ? (
-                    <svg
-                      className="animate-spin h-4 w-4 text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   ) : (
-                    'Send'
+                    <Send className="w-5 h-5" />
                   )}
                 </button>
               </div>
-              <div className="mt-1 text-xs text-pink-500 text-center">
-                Ask me to add, complete, or manage your todos
-              </div>
+              <p className="mt-3 text-[10px] text-pink-400 text-center font-black uppercase tracking-widest">
+                AI Productivity Powered
+              </p>
             </div>
           </div>
         </div>

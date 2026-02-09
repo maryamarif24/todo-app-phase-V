@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useAuth } from '@/components/auth/auth-provider';
 
 export default function Home() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -16,20 +16,32 @@ export default function Home() {
   }
 
   return (
-    <div 
-      className="relative min-h-screen w-full overflow-x-hidden bg-cover bg-center bg-no-repeat"
-      style={{ backgroundImage: "url('/bg.jpg')" }}
-    >
+    /* FIX: We use a pseudo-element or a dual background to "fade" the dark pink image */
+    <div className="relative min-h-screen w-full overflow-x-hidden">
+      
+      {/* Background Layer with Opacity Control */}
+      <div 
+        className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
+        style={{ 
+          backgroundImage: "url('/bg.jpg')",
+        }}
+      />
+      
+      {/* TRANSPARENT OVERLAY: 
+         This is the magic part. It tints the dark image to a light, 
+         cleaner version so your pink text is actually readable.
+      */}
+      <div className="absolute inset-0 z-0 bg-white/80 backdrop-blur-[2px]" />
 
 
       {/* HERO SECTION */}
-      <section className="relative w-full pt-24 lg:pt-32 pb-20">
+      <section className="relative w-full pt-24 lg:pt-32 pb-20 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             
             {/* LEFT SIDE: TEXT CONTENT */}
             <div className="relative z-10">
-              <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-pink-50 border border-pink-100 mb-6">
+              <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-pink-50 border border-pink-100 mb-6 shadow-sm">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-pink-500"></span>
@@ -37,11 +49,11 @@ export default function Home() {
                 <span className="text-xs font-bold text-[#db2777] uppercase tracking-wider">Productivity Redefined</span>
               </div>
               
-              <h1 className="text-4xl tracking-tight font-extrabold text-gray-900 sm:text-5xl md:text-6xl leading-[1.1]">
+              <h1 className="text-4xl tracking-tight font-black text-gray-900 sm:text-5xl md:text-6xl leading-[1.1]">
                 <span className="block text-[#db2777]">Streamline Your Tasks with</span>
                 <span className="block text-gray-800">Worksy Todo</span>
               </h1>
-              <p className="mt-6 text-lg text-gray-600 max-w-xl leading-relaxed">
+              <p className="mt-6 text-lg text-gray-600 max-w-xl leading-relaxed font-medium">
                 A professional task management suite designed for clarity. 
                 Organize work, track progress, and hit deadlines with a minimalist interface.
               </p>
@@ -55,45 +67,39 @@ export default function Home() {
                 </Link>
                 <Link
                   href="/signin"
-                  className="flex items-center justify-center px-10 py-4 border border-gray-200 text-gray-700 bg-white hover:bg-gray-50 rounded-xl font-bold text-lg shadow-sm transition-all hover:-translate-y-1"
+                  className="flex items-center justify-center px-10 py-4 border-2 border-gray-200 text-gray-700 bg-white hover:bg-gray-50 rounded-xl font-bold text-lg shadow-sm transition-all hover:-translate-y-1"
                 >
                   Sign In
                 </Link>
               </div>
             </div>
 
-            {/* RIGHT SIDE: PROFESSIONAL CONTEXTUAL GLASS ELEMENTS */}
+            {/* RIGHT SIDE: GLASS ELEMENTS */}
             <div className="relative h-[500px] w-full hidden lg:flex items-center justify-center">
-              
-              {/* Soft Background Radial Glow */}
-              <div className="absolute w-[500px] h-[500px] bg-gradient-to-r from-pink-100/40 to-indigo-100/30 rounded-full blur-[120px]" />
+              <div className="absolute w-[500px] h-[500px] bg-gradient-to-r from-pink-200/30 to-indigo-100/20 rounded-full blur-[120px]" />
 
-              {/* 1. Main Task Card Element */}
-              <div className="absolute z-20 w-72 h-48 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.05)] p-6 animate-float">
+              {/* Main Task Card */}
+              <div className="absolute z-20 w-72 h-48 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.08)] p-6 animate-float">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-10 h-10 rounded-lg bg-[#ec4899] flex items-center justify-center text-white">
+                  <div className="w-10 h-10 rounded-lg bg-[#ec4899] flex items-center justify-center text-white shadow-lg">
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"/></svg>
                   </div>
-                  <div className="h-2 w-20 bg-gray-200 rounded-full" />
+                  <div className="h-2 w-20 bg-gray-200/50 rounded-full" />
                 </div>
                 <div className="space-y-3">
                   <div className="h-3 w-full bg-white/60 rounded-full" />
                   <div className="h-3 w-3/4 bg-white/60 rounded-full" />
-                  <div className="flex space-x-2 pt-2">
-                    <div className="h-6 w-16 bg-pink-100/50 border border-pink-200 rounded-md" />
-                    <div className="h-6 w-16 bg-blue-100/50 border border-blue-200 rounded-md" />
-                  </div>
                 </div>
               </div>
 
-              {/* 2. Floating "Priority" Tag (Context: Tags) */}
-              <div className="absolute top-10 right-10 z-30 w-32 h-14 bg-white/60 backdrop-blur-lg border border-white/80 rounded-2xl shadow-xl flex items-center justify-center space-x-2 animate-float-delayed">
-                <div className="w-3 h-3 rounded-full bg-red-400" />
-                <span className="text-xs font-bold text-gray-600 uppercase tracking-tighter">High Priority</span>
+              {/* High Priority Tag */}
+              <div className="absolute top-10 right-10 z-30 w-36 h-14 bg-white/70 backdrop-blur-lg border border-white/80 rounded-2xl shadow-xl flex items-center justify-center space-x-2 animate-float-delayed">
+                <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
+                <span className="text-xs font-bold text-gray-700 uppercase tracking-tighter">High Priority</span>
               </div>
 
-              {/* 3. Small "Calendar" Glass Shape (Context: Due Dates) */}
-              <div className="absolute -bottom-5 left-10 z-10 w-40 h-40 bg-white/20 backdrop-blur-md border border-white/40 rounded-[2rem] rotate-[-15deg] flex flex-col p-4 shadow-lg opacity-80">
+              {/* Calendar Glass */}
+              <div className="absolute -bottom-5 left-10 z-10 w-40 h-40 bg-white/30 backdrop-blur-md border border-white/40 rounded-[2rem] rotate-[-15deg] flex flex-col p-4 shadow-lg opacity-90">
                 <div className="h-4 w-full border-b border-white/40 mb-3" />
                 <div className="grid grid-cols-4 gap-2">
                   {[...Array(8)].map((_, i) => (
@@ -101,15 +107,14 @@ export default function Home() {
                   ))}
                 </div>
               </div>
-
             </div>
 
           </div>
         </div>
       </section>
 
-      {/* FEATURES SECTION */}
-      <div className="bg-white py-24 border-t border-gray-100">
+      {/* FEATURES SECTION (Pure White Background) */}
+      <div className="relative z-10 bg-white py-24 border-t border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-[#ec4899] font-bold uppercase tracking-widest text-sm">Framework</h2>

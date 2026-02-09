@@ -67,57 +67,24 @@ const Dashboard = () => {
   const fetchTasks = async () => {
     try {
       // Fetch tasks from the API using the api service
-      const response = await api.get<{ todos: TodoResponse[] }>('/todos');
+      const response = await api.get<TodoResponse[]>('/todos');
 
       if (response.error) {
         throw new Error(response.error);
       }
 
       // Map the response to the Task type
-      if (response.data && response.data.todos && Array.isArray(response.data.todos)) {
-        const mappedTasks = response.data.todos.map((todo) => ({
+      if (response.data && Array.isArray(response.data)) {
+        const mappedTasks = response.data.map((todo) => ({
           id: todo.id,
           title: todo.title,
           completed: todo.is_complete,
-          priority: (() => {
-            const priority = (todo.priority || 'MEDIUM').toLowerCase();
-            return priority === 'low' || priority === 'medium' || priority === 'high'
-              ? priority
-              : 'medium';
-          })(),  // Convert to lowercase for consistency
+          priority: todo.priority || 'medium',
           dueDate: todo.due_date || undefined,
           createdAt: todo.created_at
         }));
 
-        // If no tasks from API, show default sample todos
-        if (mappedTasks.length === 0) {
-          const defaultTasks: Task[] = [
-            {
-              id: 'sample-1',
-              title: 'Welcome to TodoApp! Click the + button to add your first task',
-              completed: false,
-              priority: 'medium' as const,
-              createdAt: new Date().toISOString()
-            },
-            {
-              id: 'sample-2',
-              title: 'Try marking this task as complete by clicking the circle',
-              completed: false,
-              priority: 'low' as const,
-              createdAt: new Date().toISOString()
-            },
-            {
-              id: 'sample-3',
-              title: 'You can change priority using the menu (⋯) button',
-              completed: false,
-              priority: 'high' as const,
-              createdAt: new Date().toISOString()
-            }
-          ];
-          setTasks(defaultTasks);
-        } else {
-          setTasks(mappedTasks);
-        }
+        setTasks(mappedTasks);
       } else {
         setTasks([]);
       }
@@ -224,15 +191,15 @@ const Dashboard = () => {
 
     try {
       // Call the API to add the task
-      const response = await api.post('/todos', {
+      const response = await api.post('/todos', { 
         title: newTask,
-        priority: newTaskPriority.toUpperCase()  // Backend expects uppercase (MEDIUM, HIGH, LOW)
+        priority: newTaskPriority
       });
-
+      
       if (response.error) {
         throw new Error(response.error);
       }
-
+      
       // Refresh the task list to include the new task
       await fetchTasks();
       setNewTask('');
@@ -260,21 +227,14 @@ const Dashboard = () => {
   };
 
   const deleteTask = async (id: string) => {
-    // Handle sample tasks (don't call API for them)
-    if (id.startsWith('sample-')) {
-      setTasks(prevTasks => prevTasks.filter(task => task.id !== id));
-      setOpenDropdown(null);
-      return;
-    }
-
     try {
       // Call the API to delete the task
       const response = await api.delete(`/todos/${id}`);
-
+      
       if (response.error) {
         throw new Error(response.error);
       }
-
+      
       // Refresh the task list to reflect the deletion
       await fetchTasks();
       setOpenDropdown(null);
@@ -292,7 +252,7 @@ const Dashboard = () => {
     try {
       // Call the API to update the task priority
       const response = await api.patch(`/todos/${id}`, {
-        priority: priority.toUpperCase()  // Backend expects uppercase (MEDIUM, HIGH, LOW)
+        priority: priority
       });
 
       if (response.error) {
@@ -696,60 +656,59 @@ const Dashboard = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="relative">
                     <button
-                      onClick={() => deleteTask(task.id)}
-                      className="p-1 text-gray-400 hover:text-red-500 rounded-md hover:bg-gray-100 transition-colors"
-                      style={{ color: 'gray' }}
+                      onClick={() => toggleDropdown(task.id)}
+                      className="p-1 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-50"
+                      style={{ color: 'black' }}
                     >
-                      <X className="w-4 h-4" style={{ color: 'inherit' }} />
+                      <MoreVertical className="w-4 h-4" style={{ color: 'black' }} />
                     </button>
-                    
-                    <div className="relative">
-                      <button
-                        onClick={() => toggleDropdown(task.id)}
-                        className="p-1 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-50"
-                        style={{ color: 'black' }}
-                      >
-                        <MoreVertical className="w-4 h-4" style={{ color: 'black' }} />
-                      </button>
 
-                      {openDropdown === task.id && (
-                        <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-300 rounded-lg shadow-lg z-10"
-                             style={{ borderColor: '#d1d5db', backgroundColor: 'white' }}>
-                          <div className="py-1">
-                            <div className="px-3 py-2 text-xs font-medium text-pink-500 uppercase tracking-wider border-b border-gray-300"
-                                 style={{ color: '#ff69b4', borderColor: '#d1d5db' }}>
-                              Set Priority
-                            </div>
-                            <button
-                              onClick={() => updateTaskPriority(task.id, 'high')}
-                              className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
-                              style={{ color: 'black' }}
-                            >
-                              <Flag className="w-4 h-4 text-black" style={{ color: 'black' }} />
-                              High Priority
-                            </button>
-                            <button
-                              onClick={() => updateTaskPriority(task.id, 'medium')}
-                              className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
-                              style={{ color: '#ff69b4' }}
-                            >
-                              <Flag className="w-4 h-4 text-pink-500" style={{ color: '#ff69b4' }} />
-                              Medium Priority
-                            </button>
-                            <button
-                              onClick={() => updateTaskPriority(task.id, 'low')}
-                              className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
-                              style={{ color: '#ff69b4' }}
-                            >
-                              <Flag className="w-4 h-4 text-pink-400" style={{ color: '#ff69b4' }} />
-                              Low Priority
-                            </button>
+                    {openDropdown === task.id && (
+                      <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-300 rounded-lg shadow-lg z-10"
+                           style={{ borderColor: '#d1d5db', backgroundColor: 'white' }}>
+                        <div className="py-1">
+                          <div className="px-3 py-2 text-xs font-medium text-pink-500 uppercase tracking-wider border-b border-gray-300"
+                               style={{ color: '#ff69b4', borderColor: '#d1d5db' }}>
+                            Set Priority
                           </div>
+                          <button
+                            onClick={() => updateTaskPriority(task.id, 'high')}
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
+                            style={{ color: 'black' }}
+                          >
+                            <Flag className="w-4 h-4 text-black" style={{ color: 'black' }} />
+                            High Priority
+                          </button>
+                          <button
+                            onClick={() => updateTaskPriority(task.id, 'medium')}
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
+                            style={{ color: '#ff69b4' }}
+                          >
+                            <Flag className="w-4 h-4 text-pink-500" style={{ color: '#ff69b4' }} />
+                            Medium Priority
+                          </button>
+                          <button
+                            onClick={() => updateTaskPriority(task.id, 'low')}
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
+                            style={{ color: '#ff69b4' }}
+                          >
+                            <Flag className="w-4 h-4 text-pink-400" style={{ color: '#ff69b4' }} />
+                            Low Priority
+                          </button>
+                          <div className="border-t border-gray-300" style={{ borderColor: '#d1d5db' }}></div>
+                          <button
+                            onClick={() => deleteTask(task.id)}
+                            className="w-full text-left px-3 py-2 text-sm text-black hover:bg-gray-50 flex items-center gap-2"
+                            style={{ color: 'black' }}
+                          >
+                            <X className="w-4 h-4" style={{ color: 'black' }} />
+                            Delete Task
+                          </button>
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))

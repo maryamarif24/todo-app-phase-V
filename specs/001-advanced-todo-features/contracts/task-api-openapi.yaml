@@ -1,0 +1,527 @@
+openapi: 3.0.3
+info:
+  title: Advanced Task Management API
+  description: API for managing enhanced task features including priorities, due dates, tags, and recurring tasks
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000
+    description: Development server
+  - url: https://api.worksy-todo.com
+    description: Production server
+paths:
+  /api/v1/tasks:
+    get:
+      summary: List tasks with advanced filtering
+      description: Retrieve a list of tasks with support for filtering, sorting, and pagination
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [pending, completed]
+        - name: priority
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [LOW, MEDIUM, HIGH]
+        - name: tag
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: due_date_start
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: due_date_end
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: sort_by
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [created_at, due_date, priority]
+        - name: order
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: List of tasks with filtering applied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tasks:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Task'
+                  total:
+                    type: integer
+                  offset:
+                    type: integer
+                  limit:
+                    type: integer
+        '400':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+    post:
+      summary: Create a new task with advanced features
+      description: Create a task with priority, due date, tags, and optional recurrence pattern
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTaskRequest'
+      responses:
+        '201':
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          description: Invalid task data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+
+  /api/v1/tasks/{task_id}:
+    get:
+      summary: Get a specific task
+      description: Retrieve a single task by its ID
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Task retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+    put:
+      summary: Update a task
+      description: Update task with new attributes including priority, due date, tags, etc.
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTaskRequest'
+      responses:
+        '200':
+          description: Task updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+        '400':
+          description: Invalid update data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+    delete:
+      summary: Delete a task
+      description: Remove a task from the system
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Task deleted successfully
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+
+  /api/v1/tasks/recurring:
+    post:
+      summary: Create a recurring task pattern
+      description: Define a recurring pattern that will generate tasks automatically
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRecurringPatternRequest'
+      responses:
+        '201':
+          description: Recurring pattern created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecurringPattern'
+        '400':
+          description: Invalid pattern data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+
+  /api/v1/tasks/search:
+    post:
+      summary: Advanced task search
+      description: Search for tasks by title, description, or tags
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchRequest'
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Task'
+                  total:
+                    type: integer
+                  query:
+                    type: string
+                  took_ms:
+                    type: integer
+
+components:
+  schemas:
+    Task:
+      type: object
+      required:
+        - id
+        - title
+        - completed
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the task
+        title:
+          type: string
+          maxLength: 255
+          description: Task title
+        description:
+          type: string
+          nullable: true
+          description: Optional task description
+        priority:
+          type: string
+          enum: [LOW, MEDIUM, HIGH]
+          default: MEDIUM
+          description: Task priority level
+        due_date:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the task is due
+        completed:
+          type: boolean
+          default: false
+          description: Whether the task is completed
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the task was marked as completed
+        tags:
+          type: array
+          items:
+            type: string
+          maxItems: 10
+          description: List of tags associated with the task
+        user_id:
+          type: string
+          format: uuid
+          description: ID of the user who owns this task
+        recurrence_pattern_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: ID of the recurring pattern if this is a recurring task
+        reminder_enabled:
+          type: boolean
+          default: false
+          description: Whether to send a reminder before due date
+        reminder_time:
+          type: string
+          format: time
+          nullable: true
+          description: Time before due date to send reminder (ISO 8601 duration format)
+        created_at:
+          type: string
+          format: date-time
+          description: When the task was created
+        updated_at:
+          type: string
+          format: date-time
+          description: When the task was last updated
+
+    CreateTaskRequest:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          nullable: true
+        priority:
+          type: string
+          enum: [LOW, MEDIUM, HIGH]
+          default: MEDIUM
+        due_date:
+          type: string
+          format: date-time
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+          maxItems: 10
+        recurrence_pattern_id:
+          type: string
+          format: uuid
+          nullable: true
+        reminder_enabled:
+          type: boolean
+          default: false
+        reminder_time:
+          type: string
+          format: time
+          nullable: true
+
+    UpdateTaskRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          nullable: true
+        priority:
+          type: string
+          enum: [LOW, MEDIUM, HIGH]
+        due_date:
+          type: string
+          format: date-time
+          nullable: true
+        completed:
+          type: boolean
+        tags:
+          type: array
+          items:
+            type: string
+          maxItems: 10
+        reminder_enabled:
+          type: boolean
+        reminder_time:
+          type: string
+          format: time
+          nullable: true
+
+    RecurringPattern:
+      type: object
+      required:
+        - id
+        - user_id
+        - frequency
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        frequency:
+          type: string
+          enum: [DAILY, WEEKLY, MONTHLY]
+        interval:
+          type: integer
+          minimum: 1
+          maximum: 365
+          default: 1
+        end_condition_type:
+          type: string
+          enum: [COUNT, DATE, NEVER]
+        end_after_count:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          nullable: true
+        end_date:
+          type: string
+          format: date-time
+          nullable: true
+        weekdays_mask:
+          type: integer
+          minimum: 1
+          maximum: 127
+          nullable: true
+          description: Bitmask for weekdays (1=Mon, 2=Tue, 4=Wed, etc.)
+        day_of_month:
+          type: integer
+          minimum: 1
+          maximum: 31
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateRecurringPatternRequest:
+      type: object
+      required:
+        - frequency
+      properties:
+        frequency:
+          type: string
+          enum: [DAILY, WEEKLY, MONTHLY]
+        interval:
+          type: integer
+          minimum: 1
+          maximum: 365
+          default: 1
+        end_condition_type:
+          type: string
+          enum: [COUNT, DATE, NEVER]
+          default: NEVER
+        end_after_count:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          nullable: true
+        end_date:
+          type: string
+          format: date-time
+          nullable: true
+        weekdays_mask:
+          type: integer
+          minimum: 1
+          maximum: 127
+          nullable: true
+        day_of_month:
+          type: integer
+          minimum: 1
+          maximum: 31
+          nullable: true
+
+    SearchRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          minLength: 1
+          maxLength: 255
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        filters:
+          type: object
+          properties:
+            status:
+              type: string
+              enum: [pending, completed]
+            priority:
+              type: string
+              enum: [LOW, MEDIUM, HIGH]
+            tags:
+              type: array
+              items:
+                type: string
+
+    APIError:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          description: Additional error details
+          nullable: true

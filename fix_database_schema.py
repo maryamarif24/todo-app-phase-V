@@ -51,11 +51,11 @@ def fix_database_schema():
                 users_in_user_table = []
 
                 for user_id in referenced_user_ids:
-                    user_in_users = conn.execute(text("SELECT * FROM users WHERE id = %s"), (user_id,)).fetchone()
+                    user_in_users = conn.execute(text("SELECT * FROM users WHERE id = :user_id"), {"user_id": user_id}).fetchone()
                     if user_in_users:
                         users_in_users_table.append(dict(user_in_users._mapping))
 
-                    user_in_user = conn.execute(text("SELECT * FROM user WHERE id = %s"), (user_id,)).fetchone()
+                    user_in_user = conn.execute(text("SELECT * FROM user WHERE id = :user_id"), {"user_id": user_id}).fetchone()
                     if user_in_user:
                         users_in_user_table.append(dict(user_in_user._mapping))
 
@@ -74,13 +74,16 @@ def fix_database_schema():
             CREATE TABLE todo (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 user_id UUID NOT NULL,
-                title VARCHAR(200) NOT NULL,
+                title VARCHAR(255) NOT NULL,
                 description VARCHAR(2000),
                 is_complete BOOLEAN DEFAULT FALSE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 completed_at TIMESTAMP NULL,
+                priority VARCHAR(20) DEFAULT 'MEDIUM',
                 due_date TIMESTAMP NULL,
+                reminder_enabled BOOLEAN DEFAULT FALSE,
+                reminder_time VARCHAR(20) NULL,
                 CONSTRAINT fk_todo_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             );
             """
@@ -97,28 +100,31 @@ def fix_database_schema():
                 for todo in existing_todos:
                     # Check if the user exists in the 'users' table before inserting
                     user_exists = conn.execute(
-                        text("SELECT 1 FROM users WHERE id = %s"),
-                        (todo['user_id'],)
+                        text("SELECT 1 FROM users WHERE id = :user_id"),
+                        {"user_id": todo['user_id']}
                     ).fetchone()
 
                     if user_exists:
-                        # Insert the todo record
+                        # Insert the todo record with all columns (using defaults for new fields)
                         insert_sql = """
-                        INSERT INTO todo (id, user_id, title, description, is_complete, created_at, updated_at, completed_at, due_date)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        INSERT INTO todo (id, user_id, title, description, is_complete, created_at, updated_at, completed_at, priority, due_date, reminder_enabled, reminder_time)
+                        VALUES (:id, :user_id, :title, :description, :is_complete, :created_at, :updated_at, :completed_at, :priority, :due_date, :reminder_enabled, :reminder_time)
                         """
 
-                        conn.execute(text(insert_sql), (
-                            todo['id'],
-                            todo['user_id'],
-                            todo['title'],
-                            todo.get('description'),
-                            todo['is_complete'],
-                            todo['created_at'],
-                            todo['updated_at'],
-                            todo.get('completed_at'),
-                            todo.get('due_date')
-                        ))
+                        conn.execute(text(insert_sql), {
+                            "id": todo['id'],
+                            "user_id": todo['user_id'],
+                            "title": todo['title'],
+                            "description": todo.get('description'),
+                            "is_complete": todo['is_complete'],
+                            "created_at": todo['created_at'],
+                            "updated_at": todo['updated_at'],
+                            "completed_at": todo.get('completed_at'),
+                            "priority": 'MEDIUM',  # default priority
+                            "due_date": todo.get('due_date'),
+                            "reminder_enabled": False,  # default reminder_enabled
+                            "reminder_time": None  # default reminder_time
+                        })
                         print(f"    [INFO] Restored todo: {todo['title']}")
                     else:
                         print(f"    [WARN] User {todo['user_id']} not found in 'users' table, skipping todo: {todo['title']}")
