@@ -2,10 +2,9 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useAuth } from './auth-provider';
-import type { SigninRequest, SigninResponse, ErrorResponse } from '@/types';
+import type { SigninRequest, SigninResponse } from '@/types';
 
 
 export function SigninForm() {

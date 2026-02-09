@@ -11,7 +11,7 @@ interface Message {
 }
 
 interface ChatWidgetProps {
-  onTaskCreated?: (task: any) => void;
+  onTaskCreated?: (task: { title: string; priority?: string; completed?: boolean }) => void;
 }
 
 export const ChatWidget: React.FC<ChatWidgetProps> = ({ onTaskCreated }) => {

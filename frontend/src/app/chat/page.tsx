@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/auth/auth-provider';
-import type { User } from '@/types';
 
 interface Message {
   id: string;

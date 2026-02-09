@@ -1,11 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/components/auth/auth-provider';
 
 export default function Home() {
-  const { user, isLoading } = useAuth();
+  const { isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -18,17 +17,17 @@ export default function Home() {
   return (
     /* FIX: We use a pseudo-element or a dual background to "fade" the dark pink image */
     <div className="relative min-h-screen w-full overflow-x-hidden">
-      
+
       {/* Background Layer with Opacity Control */}
-      <div 
+      <div
         className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
-        style={{ 
+        style={{
           backgroundImage: "url('/bg.jpg')",
         }}
       />
-      
-      {/* TRANSPARENT OVERLAY: 
-         This is the magic part. It tints the dark image to a light, 
+
+      {/* TRANSPARENT OVERLAY:
+         This is the magic part. It tints the dark image to a light,
          cleaner version so your pink text is actually readable.
       */}
       <div className="absolute inset-0 z-0 bg-white/80 backdrop-blur-[2px]" />
@@ -38,7 +37,7 @@ export default function Home() {
       <section className="relative w-full pt-24 lg:pt-32 pb-20 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            
+
             {/* LEFT SIDE: TEXT CONTENT */}
             <div className="relative z-10">
               <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-pink-50 border border-pink-100 mb-6 shadow-sm">
@@ -48,16 +47,16 @@ export default function Home() {
                 </span>
                 <span className="text-xs font-bold text-[#db2777] uppercase tracking-wider">Productivity Redefined</span>
               </div>
-              
+
               <h1 className="text-4xl tracking-tight font-black text-gray-900 sm:text-5xl md:text-6xl leading-[1.1]">
                 <span className="block text-[#db2777]">Streamline Your Tasks with</span>
                 <span className="block text-gray-800">Worksy Todo</span>
               </h1>
               <p className="mt-6 text-lg text-gray-600 max-w-xl leading-relaxed font-medium">
-                A professional task management suite designed for clarity. 
+                A professional task management suite designed for clarity.
                 Organize work, track progress, and hit deadlines with a minimalist interface.
               </p>
-              
+
               <div className="mt-10 flex flex-col sm:flex-row gap-4">
                 <Link
                   href="/signup"

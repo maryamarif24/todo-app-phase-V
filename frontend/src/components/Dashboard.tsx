@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/auth-provider';
 import { api } from '@/lib/api';
-import { ChatWidget } from './ChatWidget';
 import {
   Inbox,
   Calendar,
@@ -43,30 +42,8 @@ const Dashboard = () => {
   const router = useRouter();
   const { user, signout, updateUser } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [error, setError] = useState<string | null>(null);
 
-  // Function to refresh tasks after chatbot operations
-  const refreshTasks = useCallback(async () => {
-    await fetchTasks();
-  }, []);
-
-  useEffect(() => {
-    fetchTasks();
-  }, []);
-
-  // Listen for custom events from the chat widget to refresh tasks
-  useEffect(() => {
-    const handleRefreshTasks = () => {
-      refreshTasks();
-    };
-
-    window.addEventListener('refreshTasks', handleRefreshTasks);
-    return () => {
-      window.removeEventListener('refreshTasks', handleRefreshTasks);
-    };
-  }, [refreshTasks]);
-
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     try {
       // Fetch tasks from the API using the api service
       const response = await api.get<{ todos: TodoResponse[] }>('/todos');
@@ -124,7 +101,6 @@ const Dashboard = () => {
         setTasks([]);
       }
     } catch (err) {
-      setError('Failed to load tasks');
       console.error('Error fetching tasks:', err);
 
       // Fallback to mock data if API fails
@@ -160,10 +136,30 @@ const Dashboard = () => {
           dueDate: '2024-02-12',
           createdAt: '2024-02-05'
         }
-      ];
+      ]
       setTasks(mockTasks);
     }
-  };
+  }, []);
+
+  const refreshTasks = useCallback(async () => {
+    await fetchTasks();
+  }, [fetchTasks]);
+
+  useEffect(() => {
+    fetchTasks();
+  }, [fetchTasks]);
+
+  // Listen for custom events from the chat widget to refresh tasks
+  useEffect(() => {
+    const handleRefreshTasks = () => {
+      refreshTasks();
+    };
+
+    window.addEventListener('refreshTasks', handleRefreshTasks);
+    return () => {
+      window.removeEventListener('refreshTasks', handleRefreshTasks);
+    };
+  }, [refreshTasks]);
 
   const [newTask, setNewTask] = useState('');
   const [newTaskPriority, setNewTaskPriority] = useState<'low' | 'medium' | 'high'>('medium');
@@ -178,28 +174,6 @@ const Dashboard = () => {
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [editingName, setEditingName] = useState(user?.email.split('@')[0] || '');
   const [editingEmail, setEditingEmail] = useState(user?.email || '');
-
-  // Handle task creation from chat widget
-  const handleTaskCreated = useCallback(async (taskData: { title: string; priority?: string; completed?: boolean }) => {
-    try {
-      const response = await api.post('/todos', {
-        title: taskData.title,
-        priority: (taskData.priority || 'medium').toUpperCase()
-      });
-
-      if (response.error) {
-        throw new Error(response.error);
-      }
-
-      // Refresh the task list
-      await fetchTasks();
-
-      // Dispatch custom event to notify chat widget
-      window.dispatchEvent(new CustomEvent('taskCreated', { detail: taskData }));
-    } catch (err) {
-      console.error('Error creating task from chat:', err);
-    }
-  }, [fetchTasks]);
   const [activeFilter, setActiveFilter] = useState<'all' | 'completed' | 'pending'>('all');
 
   useEffect(() => {
@@ -261,7 +235,6 @@ const Dashboard = () => {
       await fetchTasks();
       setNewTask('');
     } catch (err) {
-      setError('Failed to add task');
       console.error('Error adding task:', err);
     }
   };
@@ -278,7 +251,6 @@ const Dashboard = () => {
       // Refresh the task list to reflect the change
       await fetchTasks();
     } catch (err) {
-      setError('Failed to update task');
       console.error('Error toggling task:', err);
     }
   };
@@ -303,7 +275,6 @@ const Dashboard = () => {
       await fetchTasks();
       setOpenDropdown(null);
     } catch (err) {
-      setError('Failed to delete task');
       console.error('Error deleting task:', err);
     }
   };
@@ -327,7 +298,6 @@ const Dashboard = () => {
       await fetchTasks();
       setOpenDropdown(null);
     } catch (err) {
-      setError('Failed to update task priority');
       console.error('Error updating task priority:', err);
     }
   };
@@ -1051,7 +1021,6 @@ const Dashboard = () => {
                     setShowEditProfileModal(false);
                   } catch (error) {
                     console.error('Error updating profile:', error);
-                    setError('Failed to update profile. Please try again.');
                   }
                 }}
                 className="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600"

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/lib/api';
 import type { Todo, TodoListResponse, CreateTodoResponse } from '@/types';
 import { useAuth } from './auth/auth-provider';
@@ -20,16 +20,9 @@ export default function TodoSection({ isAuthenticated }: TodoSectionProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-    if (isAuthenticated) {
-      fetchTodos();
-    }
-  }, [isAuthenticated]);
-
-  const fetchTodos = async () => {
+  const fetchTodos = useCallback(async () => {
     if (!isAuthenticated) return;
-    
+
     setLoading(true);
     const response = await api.get<TodoListResponse>('/todos');
 
@@ -40,7 +33,14 @@ export default function TodoSection({ isAuthenticated }: TodoSectionProps) {
     }
 
     setLoading(false);
-  };
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    setMounted(true);
+    if (isAuthenticated) {
+      fetchTodos();
+    }
+  }, [isAuthenticated, fetchTodos]);
 
   const handleToggle = async (todoId: string) => {
     const response = await api.patch<Todo>(`/todos/${todoId}/toggle`);

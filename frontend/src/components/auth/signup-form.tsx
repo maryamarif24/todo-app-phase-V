@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useAuth } from './auth-provider';
-import type { SignupRequest, SignupResponse, ErrorResponse } from '@/types';
+import type { SignupRequest, SignupResponse } from '@/types';
 
 
 export function SignupForm() {

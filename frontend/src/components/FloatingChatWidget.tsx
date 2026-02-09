@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/auth/auth-provider';
-import { LogOut, Settings, MoreVertical, Send, X, MessageSquare } from 'lucide-react';
+import { Send, X, MessageSquare } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -23,7 +23,7 @@ export default function FloatingChatWidget() {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([
-    { id: 'floating-chat', messages: [] } 
+    { id: 'floating-chat', messages: [] }
   ]);
   const [currentConversationId] = useState<string>('floating-chat');
   const [error, setError] = useState('');
@@ -167,7 +167,7 @@ export default function FloatingChatWidget() {
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] w-full max-w-md h-[600px] max-h-[85vh] flex flex-col overflow-hidden border border-white/20">
-            
+
             {/* Header */}
             <div className="p-6 bg-gradient-to-r from-[#ec4899] to-[#db2777] text-white flex justify-between items-center shadow-md">
               <div className="flex items-center gap-3">

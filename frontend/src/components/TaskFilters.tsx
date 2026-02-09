@@ -1,5 +1,5 @@
 import React from "react";
-import { Filter, Clock, Flag, Tag, CheckCircle2, Circle } from "lucide-react";
+import { Filter, Clock, Flag, CheckCircle2, Circle } from "lucide-react";
 import { FilterOptions } from "@/types/task";
 
 interface TaskFiltersProps {
