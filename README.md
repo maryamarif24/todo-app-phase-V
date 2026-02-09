@@ -1,158 +1,186 @@
-# Todo App with Conversational AI
+# TodoApp - Phase III: Conversational AI Todos
 
-This is a full-stack todo application with a conversational AI assistant that can help manage your todos using natural language.
+A modern, full-stack todo application with conversational AI capabilities, built with Next.js frontend and FastAPI backend.
 
 ## Features
 
-- **Full-stack web application**: Backend API with FastAPI and frontend with Next.js
-- **Todo management**: Create, read, update, delete, and toggle completion status of todos
-- **Conversational AI**: Natural language processing for todo management through the chat interface
-- **Authentication**: Secure user authentication and authorization
-- **Responsive design**: Works on desktop and mobile devices
+- ✅ User authentication and authorization
+- ✅ Full CRUD operations for todos
+- ✅ Priority management (High, Medium, Low)
+- ✅ Due date tracking
+- ✅ Real-time dashboard with statistics
+- ✅ Responsive design with mobile support
+- ✅ Conversational AI chatbot for task management
+- ✅ Export functionality (CSV/JSON)
+- ✅ Docker containerization
+- ✅ CI/CD pipeline
 
 ## Tech Stack
 
-- **Backend**: FastAPI, SQLModel, PostgreSQL (Neon), OpenRouter AI
-- **Frontend**: Next.js 14, React, TypeScript, Tailwind CSS
-- **Authentication**: Better Auth
-- **AI Integration**: OpenRouter with Gemini 2.5 Flash model
-- **Database**: PostgreSQL (via Neon)
+### Frontend
+- **Next.js 14** - React framework
+- **TypeScript** - Type safety
+- **Tailwind CSS** - Styling
+- **Lucide React** - Icons
+- **Better Auth** - Authentication
 
-## Prerequisites
+### Backend
+- **FastAPI** - Python web framework
+- **SQLAlchemy** - ORM
+- **PostgreSQL** - Database
+- **Pydantic** - Data validation
+- **Alembic** - Database migrations
 
-- Node.js (v18 or higher)
-- Python (v3.9 or higher)
-- pip
-- npm
+### DevOps
+- **Docker & Docker Compose** - Containerization
+- **GitHub Actions** - CI/CD
+- **Husky + lint-staged** - Pre-commit hooks
 
-## Setup Instructions
+## Quick Start
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd todo-app-cli
-   ```
+### Prerequisites
+- Docker and Docker Compose
+- Node.js 18+ (for local development)
+- Python 3.11+ (for local development)
 
-2. **Install backend dependencies**
-   ```bash
-   cd backend
-   pip install -r requirements.txt
-   ```
+### Using Docker (Recommended)
 
-3. **Install frontend dependencies**
-   ```bash
-   cd ../frontend
-   npm install
-   ```
-
-4. **Set up environment variables**
-
-   Copy the example environment files:
-   ```bash
-   # In the backend directory
-   cp .env.example .env
-   ```
-
-   Update the `.env` file with your actual configuration:
-   - `DATABASE_URL`: Your PostgreSQL connection string
-   - `BETTER_AUTH_SECRET`: Generate with `openssl rand -base64 32`
-   - `OPENROUTER_API_KEY`: Your OpenRouter API key for AI functionality
-
-5. **Return to the root directory**
-   ```bash
-   cd ..
-   ```
-
-## Running the Application
-
-### Method 1: Using the startup script (recommended)
-
-Run the provided startup script:
-
-**On Windows with PowerShell:**
+1. Clone the repository:
 ```bash
-.\start-servers.ps1
+git clone <repository-url>
+cd todo-app-phase-III-chatbot
 ```
 
-**On Windows with Command Prompt:**
+2. Start the services:
 ```bash
-start-servers.bat
+docker-compose -f infra/docker-compose.yml up --build
 ```
 
-### Method 2: Manual startup
+3. Open your browser to `http://localhost:3000`
 
-1. **Start the backend server** (in a new terminal):
-   ```bash
-   cd backend
-   python -m uvicorn src.main:app --reload --port 8000
-   ```
+### Local Development
 
-2. **Start the frontend server** (in another terminal):
-   ```bash
-   cd frontend
-   npm run dev
-   ```
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd todo-app-phase-III-chatbot
+```
 
-## Accessing the Application
+2. Set up the backend:
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+# Set up your database and run migrations
+uvicorn src.main:app --reload
+```
 
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:8000
-- **Health check**: http://localhost:8000/health
-- **Chat interface**: http://localhost:3000/chat
+3. Set up the frontend:
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-## Using the Chat Agent
-
-1. Navigate to the chat interface at http://localhost:3000/chat
-2. Sign in to authenticate
-3. Start chatting with the AI assistant using natural language:
-   - "Add a todo to buy groceries"
-   - "Show me my todos"
-   - "Mark the first todo as complete"
-   - "Delete the todo about buying milk"
-
-## API Endpoints
-
-### Authentication
-- `POST /auth/signup` - User registration
-- `POST /auth/signin` - User login
-- `POST /auth/signout` - User logout
-
-### Todos
-- `GET /todos` - Get all todos for the authenticated user
-- `POST /todos` - Create a new todo
-- `GET /todos/{id}` - Get a specific todo
-- `PUT /todos/{id}` - Update a todo
-- `PATCH /todos/{id}/toggle` - Toggle completion status
-- `DELETE /todos/{id}` - Delete a todo
-
-### Chat
-- `POST /chat` - Send a message to the AI assistant
-- `GET /conversations` - Get conversation history
+4. Open your browser to `http://localhost:3000`
 
 ## Environment Variables
 
-### Backend (.env)
-- `DATABASE_URL`: PostgreSQL connection string
-- `BETTER_AUTH_SECRET`: Secret key for authentication
-- `FRONTEND_URL`: URL of the frontend for CORS (default: http://localhost:3000)
-- `OPENROUTER_API_KEY`: API key for OpenRouter AI service
-
 ### Frontend (.env.local)
-- `NEXT_PUBLIC_API_URL`: Backend API URL (default: http://localhost:8000)
-- `BETTER_AUTH_URL`: Backend URL for auth (default: http://localhost:8000)
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_CHATBOT_API_URL=http://localhost:8000/chat
+```
 
-## Troubleshooting
+### Backend
+```env
+DATABASE_URL=postgresql://user:password@localhost:5432/todo_db
+SECRET_KEY=your-secret-key-here
+CORS_ORIGINS=http://localhost:3000
+```
 
-- If the backend doesn't start, ensure your database connection is correct
-- If the frontend doesn't connect to the backend, check that both are running and the API URL is correct
-- If the chat agent doesn't work, verify that your OpenRouter API key is valid and properly configured
-- For authentication issues, ensure the BETTER_AUTH_SECRET is properly set and consistent
-- If you see "An error occurred while processing your request" in the chat, check:
-  - That your OPENROUTER_API_KEY is correctly set in the backend .env file
-  - That the database is accessible and properly configured
-  - That the MCP server is running and accessible
-  - Check the backend logs for detailed error messages
+## API Documentation
+
+When running locally, visit `http://localhost:8000/docs` for interactive API documentation.
+
+## Project Structure
+
+```
+todo-app-phase-III-chatbot/
+├── backend/                 # FastAPI backend
+│   ├── src/
+│   │   ├── api/            # API routes
+│   │   ├── auth/           # Authentication
+│   │   ├── models/         # Database models
+│   │   ├── services/       # Business logic
+│   │   └── main.py         # Application entry point
+│   ├── Dockerfile
+│   └── requirements.txt
+├── frontend/                # Next.js frontend
+│   ├── src/
+│   │   ├── app/            # Next.js app router
+│   │   ├── components/     # React components
+│   │   └── lib/            # Utilities
+│   ├── Dockerfile
+│   └── package.json
+├── infra/                   # Infrastructure
+│   └── docker-compose.yml
+├── .github/workflows/       # CI/CD
+└── README.md
+```
 
 ## Development
 
-For development, both servers run in watch mode with hot reloading enabled. Changes to the code will automatically restart the servers.
+### Code Quality
+- Pre-commit hooks with Husky and lint-staged
+- ESLint and Prettier for frontend
+- Black and isort for backend
+- TypeScript for type safety
+
+### Testing
+```bash
+# Frontend
+cd frontend
+npm run lint
+npm run type-check
+
+# Backend
+cd backend
+pytest
+```
+
+### Database Migrations
+```bash
+cd backend
+alembic upgrade head
+```
+
+## Deployment
+
+### Vercel (Frontend)
+1. Connect your GitHub repository to Vercel
+2. Set environment variables
+3. Deploy
+
+### Railway/Heroku (Backend)
+1. Connect your GitHub repository
+2. Set environment variables
+3. Deploy
+
+### Docker Deployment
+```bash
+docker-compose -f infra/docker-compose.yml up -d
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests and linting
+5. Submit a pull request
+
+## License
+
+MIT License - see LICENSE file for details
