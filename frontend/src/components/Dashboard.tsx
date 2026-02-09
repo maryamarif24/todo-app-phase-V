@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/auth-provider';
 import { api } from '@/lib/api';
+import { ChatWidget } from './ChatWidget';
 import {
   Inbox,
   Calendar,
@@ -16,7 +17,8 @@ import {
   LogOut,
   ChevronDown,
   Search,
-  X
+  X,
+  Download
 } from 'lucide-react';
 
 interface TodoResponse {
@@ -75,15 +77,15 @@ const Dashboard = () => {
 
       // Map the response to the Task type
       if (response.data && response.data.todos && Array.isArray(response.data.todos)) {
-        const mappedTasks = response.data.todos.map((todo) => ({
+          const mappedTasks = response.data.todos.map((todo) => ({
           id: todo.id,
           title: todo.title,
           completed: todo.is_complete,
           priority: (() => {
             const priority = (todo.priority || 'MEDIUM').toLowerCase();
-            return priority === 'low' || priority === 'medium' || priority === 'high'
+            return (priority === 'low' || priority === 'medium' || priority === 'high'
               ? priority
-              : 'medium';
+              : 'medium') as 'low' | 'medium' | 'high';
           })(),  // Convert to lowercase for consistency
           dueDate: todo.due_date || undefined,
           createdAt: todo.created_at
@@ -176,6 +178,28 @@ const Dashboard = () => {
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [editingName, setEditingName] = useState(user?.email.split('@')[0] || '');
   const [editingEmail, setEditingEmail] = useState(user?.email || '');
+
+  // Handle task creation from chat widget
+  const handleTaskCreated = useCallback(async (taskData: { title: string; priority?: string; completed?: boolean }) => {
+    try {
+      const response = await api.post('/todos', {
+        title: taskData.title,
+        priority: (taskData.priority || 'medium').toUpperCase()
+      });
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      // Refresh the task list
+      await fetchTasks();
+
+      // Dispatch custom event to notify chat widget
+      window.dispatchEvent(new CustomEvent('taskCreated', { detail: taskData }));
+    } catch (err) {
+      console.error('Error creating task from chat:', err);
+    }
+  }, [fetchTasks]);
   const [activeFilter, setActiveFilter] = useState<'all' | 'completed' | 'pending'>('all');
 
   useEffect(() => {
@@ -332,7 +356,7 @@ const Dashboard = () => {
   // Filter tasks based on search query and active filter
   const filteredTasks = tasks.filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     if (activeFilter === 'completed') {
       return matchesSearch && task.completed;
     } else if (activeFilter === 'pending') {
@@ -341,6 +365,36 @@ const Dashboard = () => {
       return matchesSearch;
     }
   });
+
+  // Export functions
+  const generateCSV = (tasks: Task[]) => {
+    const headers = ['Title', 'Completed', 'Priority', 'Due Date', 'Created At'];
+    const rows = tasks.map(task => [
+      task.title,
+      task.completed ? 'Yes' : 'No',
+      task.priority,
+      task.dueDate || '',
+      task.createdAt
+    ]);
+
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(field => `"${field}"`).join(','))
+      .join('\n');
+
+    return csvContent;
+  };
+
+  const downloadCSV = (content: string, filename: string) => {
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-gray-50 to-pink-50 text-gray-900">
@@ -580,6 +634,20 @@ const Dashboard = () => {
                 )}
               </div>
 
+              {/* Desktop export button */}
+              <button
+                onClick={() => {
+                  const csvContent = generateCSV(filteredTasks);
+                  const timestamp = new Date().toISOString().split('T')[0];
+                  downloadCSV(csvContent, `tasks-${timestamp}.csv`);
+                }}
+                className="p-2 rounded-lg hover:bg-gray-100 hidden md:block"
+                style={{ backgroundColor: 'rgba(0, 0, 0, 0.05)' }}
+                title="Export tasks to CSV"
+              >
+                <Download className="w-5 h-5" style={{ color: 'black' }} />
+              </button>
+
               <button
                 onClick={() => {
                   signout();
@@ -591,6 +659,20 @@ const Dashboard = () => {
                 <LogOut className="w-5 h-5" style={{ color: 'black' }} />
               </button>
               
+              {/* Mobile export button */}
+              <button
+                onClick={() => {
+                  const csvContent = generateCSV(filteredTasks);
+                  const timestamp = new Date().toISOString().split('T')[0];
+                  downloadCSV(csvContent, `tasks-${timestamp}.csv`);
+                }}
+                className="p-2 rounded-lg hover:bg-gray-100 md:hidden"
+                style={{ backgroundColor: 'rgba(0, 0, 0, 0.05)' }}
+                title="Export tasks to CSV"
+              >
+                <Download className="w-5 h-5" style={{ color: 'black' }} />
+              </button>
+
               {/* Mobile logout button */}
               <button
                 onClick={() => {
